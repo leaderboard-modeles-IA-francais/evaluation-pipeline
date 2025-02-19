@@ -365,12 +365,12 @@ def prompt_gpqa_fr(line, task_name: str = None):
 
 # BAC-fr prompt function
 def prompt_bac_fr(line, task_name: str = None):
-    prompt = f"Enoncé: {line['enonce']}\n"
+    prompt = ""
     if line['instruction'] is not None:
         prompt += f"{line['instruction']}\n"
+    prompt += f"Enoncé: {line['enonce']}\n"
     prompt += "Réponse: "
     if line["choix"] is not None:  # Multichoice evaluation
-        # prompt += "\n".join([f"{LETTER_INDICES[ix]}.{choix}" for ix, choix in enumerate(line["choix"])])
         return Doc(
             task_name=task_name,
             query=prompt,
@@ -383,8 +383,8 @@ def prompt_bac_fr(line, task_name: str = None):
 
 # pr-fouras prompt function
 def prompt_pr_fouras(line, task_name: str = None):
-    instruction = "Trouver la réponse exacte à l'énigme. Vous pouvez proposer plusieurs réponses possibles. Chaque réponse doit être séparée d'un caractère /.\n Exemple:\n Enigme: Plus je travaille, plus je raccourcis. Qui suis-je ?\nRéponses: Des ciseaux / Une paire de ciseaux / Une bougie / Une gomme / Une personne agée / Un vieux / Un vêtement / Un sécateur / Un clou / Une pause.\n\n"
-    prompt = instruction+f"Enigme: {line['enigme']}\n"
+    prompt = "Trouver la réponse exacte à l'énigme. Vous pouvez proposer plusieurs réponses possibles. Chaque réponse doit être séparée d'un caractère /.\n Exemple:\n Enigme: Plus je travaille, plus je raccourcis. Qui suis-je ?\nRéponses: Des ciseaux / Une paire de ciseaux / Une bougie / Une gomme / Une personne agée / Un vieux / Un vêtement / Un sécateur / Un clou / Une pause.\n\n"
+    prompt += f"Enigme: {line['enigme']}\n"
     prompt += "Réponses: "
     return Doc(task_name=task_name, query=prompt, choices=[line["reponse"]], gold_index=0, instruction="")
 
@@ -439,7 +439,7 @@ bac_fr_task = LightevalTaskConfig(
     few_shots_select="random_sampling",
     generation_size=100,
     metric=[bac_prefixsuffix_quasi_exact_match],
-    stop_sequence=["\n"],
+    stop_sequence=[],
     trust_dataset=True,
     version=0,
 )
@@ -455,9 +455,9 @@ pr_fouras_task = LightevalTaskConfig(
     evaluation_splits=["train"],
     few_shots_split=None,
     few_shots_select="random_sampling",
-    generation_size=100,
+    generation_size=50,
     metric=[pfouras_prefixsuffix_quasi_exact_match],
-    stop_sequence=["\n"],
+    stop_sequence=[],
     trust_dataset=True,
     version=0,
 )
