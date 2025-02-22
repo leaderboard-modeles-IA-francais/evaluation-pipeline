@@ -115,7 +115,7 @@ def math_normalizer(text: str) -> str:
         equal. This comes from Harness DROP - check if it causes a discrep in QuAC
         """
         try:
-            return str(float(text.replace(',', '.')))
+            return str(round(float(text.replace(',', '.')),2))
         except ValueError:
             return text
 
@@ -348,10 +348,8 @@ def prompt_gpqa_fr(line, task_name: str = None):
     gold_index = random.randint(0, 3)
     choices = [line["Réponse incorrecte 1"], line["Réponse incorrecte 2"], line["Réponse incorrecte 3"]]
     choices.insert(gold_index, line["Réponse correcte"])
-
-    instruction = "Choisissez la réponse correcte aux questions suivantes.\n\n"
-
-    query = f"Question: {line['Question']}\n"
+    instruction = "Répondre à la question par A ou B ou C ou D.\n\n"
+    query = f"Question: {line['Question']}\n\n"
     query += "".join([f"{key}. {choice}\n" for key, choice in zip(LETTER_INDICES, choices)])
     query += "Réponse: "
     return Doc(
@@ -365,10 +363,10 @@ def prompt_gpqa_fr(line, task_name: str = None):
 
 # BAC-fr prompt function
 def prompt_bac_fr(line, task_name: str = None):
-    prompt = ""
+    prompt = "Répondre exactement à la question en suivant les instructions.\n\n"
     if line['instruction'] is not None:
-        prompt += f"{line['instruction']}\n"
-    prompt += f"Enoncé: {line['enonce']}\n"
+        prompt += f"Instruction: {line['instruction']}\n\n"
+    prompt += f"Question: {line['enonce']}\n"
     prompt += "Réponse: "
     if line["choix"] is not None:  # Multichoice evaluation
         return Doc(
@@ -390,7 +388,7 @@ def prompt_pr_fouras(line, task_name: str = None):
 
 
 
-DSDIR = Path(os.getenv("DATASETS_DIRECTORY", "fr-gouv-coordination-ia"))
+DSDIR = Path(os.getenv("DATASETS_DIRECTORY"))
 # IFEVal-fr task
 ifeval_fr_task = LightevalTaskConfig(
     name="ifeval-fr",
