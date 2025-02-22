@@ -387,8 +387,7 @@ def prompt_pr_fouras(line, task_name: str = None):
     return Doc(task_name=task_name, query=prompt, choices=[line["reponse"]], gold_index=0, instruction="")
 
 
-
-DSDIR = Path(os.getenv("DATASETS_DIRECTORY"))
+DSDIR = Path(os.getenv("DATASETS_DIRECTORY", "fr-gouv-coordination-ia"))
 # IFEVal-fr task
 ifeval_fr_task = LightevalTaskConfig(
     name="ifeval-fr",
