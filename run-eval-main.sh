@@ -25,7 +25,6 @@ NNODES=${#NODES[@]}
 echo "Number of nodes: $NNODES"
 
 if (($NNODES>1)); then
-
    echo "Other nodes: Index $i - Node ${NODES[i]}"
    for ((i=0; i<${NNODES}; i++)); 
    do
@@ -33,6 +32,8 @@ if (($NNODES>1)); then
    done
 
    ray status
+else
+   export VLLM_WORKER_MULTIPROC_METHOD=spawn
 fi
 
 pip list
