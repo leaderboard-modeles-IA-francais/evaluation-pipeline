@@ -26,7 +26,6 @@ NODES=$(cat ${OAR_FILE_NODES} | uniq | grep -v ${HOSTNAME})
 echo "Other nodes: ${NODES}"
 for host in $NODES;
 do
-  #scp run-eval-workers.sh $host:${TMP_DIR}
   ssh $host "bash -s" < run-eval-workers.sh $(hostname -I | cut -d " " -f1)
 done
 
