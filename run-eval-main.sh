@@ -2,10 +2,7 @@
 
 module load apptainer
 
-echo "outside container:"
-echo $PWD
-
-apptainer exec --no-mount home --nv --bind $PWD --bind /var/lib/oar  --bind ~/.hf_token --bind ~/abacist --bind ~/.ssh --bind ~/clearml.conf ~/llm_benchmark_fr.sif bash -c '
+apptainer exec --no-mount home --nv --bind $PWD --bind /var/lib/oar  --bind ~/.hf_token --bind ~/.ssh --bind ~/clearml.conf ~/llm_benchmark_fr.sif bash -c '
 
 echo "inside container"
 echo $PWD
@@ -27,11 +24,12 @@ NODES=$(cat ${OAR_FILE_NODES} | uniq | grep -v ${HOSTNAME})
 echo "Other nodes: ${NODES}"
 for host in $NODES;
 do
-  ssh $host ~/abacist/run-eval-workers.sh $(hostname -I | cut -d " " -f1)
+  scp run-eval-workers.sh $host:/tmp/${USER}/run-eval-workers.sh
+  ssh $host /tmp/${USER}:run-eval-workers.sh $(hostname -I | cut -d " " -f1)
 done
 
 ray status
 pip list
 
-python3 ~/abacist/run-lighteval.py
+python3 run-lighteval.py
 '
