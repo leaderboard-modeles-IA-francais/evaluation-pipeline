@@ -1,0 +1,21 @@
+BootStrap: docker
+From: python:3.12-slim
+
+%help
+    Container for data llm_benchmark_fr
+
+%post
+    apt-get update \
+    && apt-get install -y --no-install-recommends git ssh gcc g++ wget \
+    && apt-get purge -y --auto-remove \
+    && rm -rf /var/lib/apt/lists/*
+    pip install --upgrade pip
+    pip install -r requirements.txt
+    # Lighteval downloads this at runtime...
+    cd /usr/local/lib/python3.12/site-packages/lighteval/tasks/extended/tiny_benchmarks
+    wget https://raw.githubusercontent.com/felipemaiapolo/tinyBenchmarks/main/tinyBenchmarks/tinyBenchmarks.pkl
+    pip install -U "huggingface_hub[cli]"
+    python -m nltk.downloader -d /usr/local/share/nltk_data all
+
+%files
+    requirements.txt
