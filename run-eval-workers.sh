@@ -9,6 +9,7 @@ export TRITON_CACHE_DIR=/tmp/${USER}-runtime-dir/triton
 mkdir -p ${TRITON_CACHE_DIR}
 export VLLM_CONFIG_ROOT=/tmp/${USER}-runtime-dir/.config/vllm
 mkdir -p ${VLLM_CONFIG_ROOT}
+export VLLM_WORKER_MULTIPROC_METHOD=spawn
 
 HF_TOKEN=$(cat ~/.hf_token)
 
