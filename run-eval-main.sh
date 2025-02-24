@@ -15,6 +15,7 @@ export TRITON_CACHE_DIR=${TMP_DIR}/triton
 mkdir -p ${TRITON_CACHE_DIR}
 export VLLM_CONFIG_ROOT=${TMP_DIR}/.config/vllm
 mkdir -p ${VLLM_CONFIG_ROOT}
+export VLLM_WORKER_MULTIPROC_METHOD=spawn
 
 HF_TOKEN=$(cat ~/.hf_token)
 
