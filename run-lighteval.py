@@ -1,6 +1,6 @@
 import os
 from pathlib import Path
-#from clearml import Task
+from clearml import Task
 from lighteval.logging.evaluation_tracker import EvaluationTracker
 from lighteval.models.vllm.vllm_model import VLLMModelConfig
 from lighteval.pipeline import ParallelismManager, Pipeline, PipelineParameters
@@ -11,7 +11,7 @@ output_dir=f"/tmp/{unix_user}-runtime-dir/results"
 tasks_path=Path(f"tasks/french_evals.py")
 
 # FIXME get task by id instead
-#task = Task.init(project_name = "LLM Leaderboard FR", task_name = "eval_model")
+task = Task.init(project_name = "LLM Leaderboard FR", task_name = "eval_model")
 
 # FIXME
 # vllm_model.py:211: FutureWarning: It is strongly recommended to run mistral models with `--tokenizer-mode "mistral"` to ensure correct encoding and decoding.
@@ -47,9 +47,9 @@ pipeline_params = PipelineParameters(
 model_config = VLLMModelConfig(
     pretrained=parameters['model'],
     dtype=parameters['dtype'],
-    #gpu_memory_utilisation=parameters['gpu_memory_utilization'],
+    gpu_memory_utilisation=parameters['gpu_memory_utilization'],
     tensor_parallel_size=parameters['tensor_parallel_size'],
-    #enforce_eager=parameters['enforce_eager'],
+    enforce_eager=parameters['enforce_eager'],
     max_model_length=parameters['max_model_length'],
     use_chat_template=parameters['use_chat_template'],
 )
