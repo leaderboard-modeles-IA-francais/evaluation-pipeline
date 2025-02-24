@@ -15,22 +15,26 @@ export TRITON_CACHE_DIR=${TMP_DIR}/triton
 mkdir -p ${TRITON_CACHE_DIR}
 export VLLM_CONFIG_ROOT=${TMP_DIR}/.config/vllm
 mkdir -p ${VLLM_CONFIG_ROOT}
-export VLLM_WORKER_MULTIPROC_METHOD=spawn
 
 HF_TOKEN=$(cat ~/.hf_token)
 
 huggingface-cli login --token ${HF_TOKEN}
 
-ray start --head --port=6379
+NODES=($(cat ${OAR_FILE_NODES} | uniq | grep -v ${HOSTNAME}))
+NNODES=${#NODES[@]}
+echo "Number of nodes: $NNODES"
 
-NODES=$(cat ${OAR_FILE_NODES} | uniq | grep -v ${HOSTNAME})
-echo "Other nodes: ${NODES}"
-for host in $NODES;
-do
-  ssh $host "bash -s" < run-eval-workers.sh $(hostname -I | cut -d " " -f1)
-done
+if (($NNODES>1)); then
 
-ray status
+   echo "Other nodes: Index $i - Node ${NODES[i]}"
+   for ((i=0; i<${NNODES}; i++)); 
+   do
+	ssh ${NODES[i]} "bash -s" < run-eval-workers.sh $(hostname -I | cut -d " " -f1)
+   done
+
+   ray status
+fi
+
 pip list
 
 python3 run-lighteval.py
