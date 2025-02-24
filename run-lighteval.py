@@ -27,7 +27,7 @@ parameters = {
     'use_chat_template': True,
 }
 
-#task.connect(parameters)
+task.connect(parameters)
 
 evaluation_tracker = EvaluationTracker(
     output_dir=output_dir,
