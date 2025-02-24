@@ -24,6 +24,8 @@ NODES=($(cat ${OAR_FILE_NODES} | uniq | grep -v ${HOSTNAME}))
 NNODES=${#NODES[@]}
 echo "Number of nodes: $NNODES"
 
+ray start --head --port=6379
+
 if (($NNODES>1)); then
    echo "Other nodes: Index $i - Node ${NODES[i]}"
    for ((i=0; i<${NNODES}; i++)); 
@@ -31,11 +33,11 @@ if (($NNODES>1)); then
 	ssh ${NODES[i]} "bash -s" < run-eval-workers.sh $(hostname -I | cut -d " " -f1)
    done
 
-   ray status
 else
    export VLLM_WORKER_MULTIPROC_METHOD=spawn
 fi
 
+ray status
 pip list
 
 python3 run-lighteval.py
