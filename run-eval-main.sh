@@ -22,14 +22,15 @@ huggingface-cli login --token ${HF_TOKEN}
 
 NODES=($(cat ${OAR_FILE_NODES} | uniq | grep -v ${HOSTNAME}))
 NNODES=${#NODES[@]}
-echo "Number of nodes: $NNODES"
+echo "Number of nodes: $(($NNODES+1))"
+echo "Current node: ${HOSTNAME}"
 
 ray start --head --port=6379
 
-if (($NNODES>1)); then
-   echo "Other nodes: Index $i - Node ${NODES[i]}"
-   for ((i=0; i<${NNODES}; i++)); 
+if (($NNODES>0)); then
+   for ((i=0; i<${NNODES}; i++));
    do
+	echo "Other nodes: Index $i - Node ${NODES[i]}"
 	ssh ${NODES[i]} "bash -s" < run-eval-workers.sh $(hostname -I | cut -d " " -f1)
    done
 
@@ -39,6 +40,9 @@ fi
 
 ray status
 pip list
+
+NGPUSPERNODES=$(nvidia-smi --query-gpu=name --format=csv,noheader | wc -l)
+NGPUS=$(($NGPUSPERNODES*($NNODES+1)))
 
 python3 run-lighteval.py
 '
