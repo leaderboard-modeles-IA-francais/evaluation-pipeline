@@ -25,20 +25,18 @@ NNODES=${#NODES[@]}
 echo "Number of nodes: $(($NNODES+1))"
 echo "Current node: ${HOSTNAME}"
 
-ray start --head --port=6379
-
 if (($NNODES>0)); then
+   ray start --head --port=6379
    for ((i=0; i<${NNODES}; i++));
    do
-	echo "Other nodes: Index $i - Node ${NODES[i]}"
-	ssh ${NODES[i]} "bash -s" < run-eval-workers.sh $(hostname -I | cut -d " " -f1)
+	   echo "Other nodes: Index $i - Node ${NODES[i]}"
+	   ssh ${NODES[i]} "bash -s" < run-eval-workers.sh $(hostname -I | cut -d " " -f1)
    done
-
+   ray status
 else
    export VLLM_WORKER_MULTIPROC_METHOD=spawn
 fi
 
-ray status
 pip list
 
 NGPUSPERNODES=$(nvidia-smi --query-gpu=name --format=csv,noheader | wc -l)
