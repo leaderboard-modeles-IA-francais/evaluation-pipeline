@@ -19,12 +19,16 @@ task = Task.init(project_name = "LLM Leaderboard FR", task_name = "eval_model")
 parameters = {
     'model': 'meta-llama/Llama-3.2-3B-Instruct',
     'dtype': 'bfloat16',
-    'gpu_memory_utilization': 0.5,
-    'tensor_parallel_size': 4,
     'enforce_eager': True,
     'tasks': 'community|bac-fr|0|0,community|ifeval-fr|0|0,community|pr-fouras|0|0,community|gpqa-fr|0|0',
-    'max_model_length': 8192,
     'use_chat_template': True,
+    'max_model_length': 8192,
+    'gpu_memory_utilization': 0.5,
+    'tensor_parallel_size': 4,
+    'job_id': 'no_job_id',
+    'cluster': 'musa',
+    'nb_nodes': 2,
+    'nb_gpus_per_node': 2
 }
 
 task.connect(parameters)
