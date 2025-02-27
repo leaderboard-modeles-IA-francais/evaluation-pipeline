@@ -116,8 +116,8 @@ for model in models:
     )
 
 def gather_results():
-    for t_id in eval_tasks:
-        task = Task.get_task(task_id=t_id)
+    for task_name in eval_tasks:
+        task = Task.get_task(project_name=project_name, task_name=task_name)
         #TODO: Check artfacts existing
         local_json = task.artifacts['data file'].get_local_copy()
         # Doing some stuff with file from other Task in current Task
