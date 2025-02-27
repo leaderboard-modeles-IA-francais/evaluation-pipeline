@@ -113,11 +113,11 @@ def git_commit_push(modified_file):
 
 def models():
     # Define environment variables
-    hf_user = os.environ.get("HF_USER")
-    hf_token = os.environ.get("HF_TOKEN")
+    hf_user = os.environ.get("HF_USER_ACCESS_GIT")
+    hf_token = os.environ.get("HF_TOKEN_ACCESS_GIT")
 
     if not hf_user or not hf_token:
-        print("Error: HF_USER and HF_TOKEN must be set in the environment.")
+        print("Error: HF_USER_ACCESS_GIT and HF_TOKEN_ACCESS_GIT must be set in the environment.")
         sys.exit()
 
     # Construct repository URL TODO Update for fr-gouv-coordination-ia when going production
