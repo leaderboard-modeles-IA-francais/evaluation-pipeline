@@ -43,4 +43,8 @@ NGPUSPERNODES=$(nvidia-smi --query-gpu=name --format=csv,noheader | wc -l)
 NGPUS=$(($NGPUSPERNODES*($NNODES+1)))
 
 python3 run-lighteval.py
+
+export HF_USER_ACCESS_GIT=$(cat ~/.hf_push_user)
+export HF_TOKEN_ACCESS_GIT=$(cat ~/.hf_push_token)
+python push_results.py $TMP_DIR/results
 '

@@ -1,4 +1,4 @@
-import os
+import os, sys
 from datetime import datetime
 
 import subprocess
@@ -83,3 +83,6 @@ def push(results_dir):
     # Parse results to match requests and ensure the request status is OK
 
     git_commit_push("results")
+
+if __name__ == "__main__":
+    push(sys.argv[1])
