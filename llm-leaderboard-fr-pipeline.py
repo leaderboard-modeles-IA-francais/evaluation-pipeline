@@ -38,6 +38,13 @@ def post_execute_callback(a_pipeline, a_node):
         results[model_name]['bac-fr'] = metrics['community:bac-fr:0 | bac-fr-qem'] * 100
         results[model_name]['pr-fouras'] = metrics['community:pr-fouras:0 | pr-fouras-qem'] * 100
         print_results()
+
+        #TODO: Check artifacts exist
+        local_json = task.artifacts['data file'].get_local_copy()
+        # Doing some stuff with file from other Task in current Task
+        with open(local_json) as data_file:
+            file_text = data_file.read()
+
     return
 
 pipe = PipelineController(
@@ -52,6 +59,8 @@ eval_tasks = [ ]
 
 # Retrieve all models which need to be evaluated
 models = pull_requests.models()
+
+models = models[0:1]
 
 for model in models:
     hf_token = os.environ.get("HF_TOKEN_ACCESS_MODELS")
@@ -86,7 +95,7 @@ for model in models:
 
     # Compute number of nodes for musa
     # Get number of gpus to use (6 * 2 gpus)
-    nb_available_gpus = 12
+    nb_available_gpus = 4
     for j in range(min(nb_available_gpus, num_attention_heads), 1, -1):
         if num_attention_heads % j == 0 :
             nb_gpus = j
@@ -116,13 +125,6 @@ for model in models:
     )
 
 def gather_results():
-    for task_name in eval_tasks:
-        task = Task.get_task(project_name=project_name, task_name=task_name)
-        #TODO: Check artfacts existing
-        local_json = task.artifacts['data file'].get_local_copy()
-        # Doing some stuff with file from other Task in current Task
-        with open(local_json) as data_file:
-            file_text = data_file.read()
     return True
 
 pipe.add_function_step(
