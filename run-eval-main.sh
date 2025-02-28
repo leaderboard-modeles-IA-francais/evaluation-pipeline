@@ -15,8 +15,9 @@ export TRITON_CACHE_DIR=${TMP_DIR}/triton
 mkdir -p ${TRITON_CACHE_DIR}
 export VLLM_CONFIG_ROOT=${TMP_DIR}/.config/vllm
 mkdir -p ${VLLM_CONFIG_ROOT}
-export RESULT_DIR=$TMP_DIR/results
-export DETAIL_DIR=$RESULT_DIR/details
+export OUTPUT_DIR=$TMP_DIR/results
+export DETAIL_DIR=$OUTPUT_DIR/details
+export RESULT_DIR=$OUTPUT_DIR/clearML-musa
 
 HF_TOKEN=$(cat ~/.hf_token)
 
@@ -47,9 +48,9 @@ pip list
 
 python3 run-lighteval.py
 rm -rf $DETAIL_DIR
-mv $RESULT_DIR/results $RESULT_DIR/clearML_musa
+mv $OUTPUT_DIR/results $RESULT_DIR
 
 export HF_USER_ACCESS_GIT=$(cat ~/.hf_push_user)
 export HF_TOKEN_ACCESS_GIT=$(cat ~/.hf_push_token)
-python3 push_results.py $TMP_DIR/results
+python3 push_results.py $RESULT_DIR
 '
