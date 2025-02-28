@@ -47,5 +47,5 @@ python3 run-lighteval.py
 
 export HF_USER_ACCESS_GIT=$(cat ~/.hf_push_user)
 export HF_TOKEN_ACCESS_GIT=$(cat ~/.hf_push_token)
-python push_results.py $TMP_DIR/results
+python3 push_results.py $TMP_DIR/results
 '

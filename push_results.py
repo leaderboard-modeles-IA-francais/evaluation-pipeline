@@ -85,4 +85,5 @@ def push(results_dir):
     git_commit_push("results")
 
 if __name__ == "__main__":
+    print("Trying to push results")
     push(sys.argv[1])
