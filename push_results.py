@@ -63,21 +63,21 @@ def copy_result_files(source_dir, target_dir):
         print(f"Files copy failed with error code {e.returncode}")
         print(e.stderr)
 
-if __name__ == "__main__":
+def push(results_dir):
     # Define environment variables
-    hf_user = os.environ.get("HF_USER")
-    hf_token = os.environ.get("HF_TOKEN")
+    hf_user = os.environ.get("HF_USER_ACCESS_GIT")
+    hf_token = os.environ.get("HF_TOKEN_ACCESS_GIT")
 
     if not hf_user or not hf_token:
-        print("Error: HF_USER and HF_TOKEN must be set in the environment.")
+        print("Error: HF_USER_ACCESS_GIT and HF_TOKEN_ACCESS_GIT must be set in the environment.")
         sys.exit()
 
     # Construct repository URL TODO Update for fr-gouv-coordination-ia when going production
-    repo_url = f"https://{hf_user}:{hf_token}@huggingface.co/datasets/clebreto/results"
+    repo_url = f"https://{hf_user}:{hf_token}@huggingface.co/datasets/fr-gouv-coordination-ia/results-dev"
 
     git_clone_or_pull(repo_url, "results")
 
-    copy_result_files(os.path.expanduser("~") + "/leaderboard-results/results", "results")
+    copy_result_files(results_dir, "results")
 
     # TODO do the same with requests and update requests status
     # Parse results to match requests and ensure the request status is OK

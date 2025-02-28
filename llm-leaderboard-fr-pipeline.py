@@ -40,10 +40,12 @@ def post_execute_callback(a_pipeline, a_node):
         print_results()
 
         #TODO: Check artifacts exist
-        local_json = task.artifacts['data file'].get_local_copy()
+        local_json = completed.artifacts['data file'].get_local_copy()
         # Doing some stuff with file from other Task in current Task
         with open(local_json) as data_file:
             file_text = data_file.read()
+
+        push_results.push(results)
 
     return
 
@@ -95,14 +97,14 @@ for model in models:
 
     # Compute number of nodes for musa
     # Get number of gpus to use (6 * 2 gpus)
-    nb_available_gpus = 4
+    nb_available_gpus = 8
     for j in range(min(nb_available_gpus, num_attention_heads), 1, -1):
         if num_attention_heads % j == 0 :
             nb_gpus = j
             break
 
     # Get number of nodes to use
-    nb_gpus_per_node = 2
+    nb_gpus_per_node = 4
     nb_nodes = math.ceil(nb_gpus / nb_gpus_per_node)
 
     task_name = f"eval_{model}"
@@ -115,9 +117,11 @@ for model in models:
         parameter_override={
             #'General/dataset_url': '${stage_data.artifacts.dataset.url}',
             'General/model': model,
-            'General/cluster': 'musa',
+            'General/cluster': 'chuc',
             'General/tensor_parallel_size': str(nb_gpus),
-            'General/nb_nodes': str(nb_nodes)
+            'General/nb_nodes': str(nb_nodes),
+            'General/gpu_memory_utilization': 0.8,
+            'General/tasks': 'community|bac-fr|0|0',
         },
         execution_queue='national_clusters',
         #pre_execute_callback=pre_execute_callback_example,
