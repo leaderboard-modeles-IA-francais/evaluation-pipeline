@@ -8,17 +8,9 @@ def setup_environment():
     """
 
     subprocess.run(
-        "source /etc/profile.d/lmod.sh && env",
+        "source /etc/profile.d/lmod.sh && module load apptainer",
         shell=True,
         executable="/bin/bash")
-
-    # Check if 'module' command exists and try to load apptainer
-    try:
-        subprocess.run(["module", "load", "apptainer"], shell=True, check=True)
-        print("Successfully loaded apptainer module.")
-    except FileNotFoundError:
-        # If 'module' is not found, assume apptainer is in the PATH or set the path explicitly
-        print("Module command not found. Attempting to use apptainer directly.")
 
     return os.environ.copy()
 
