@@ -56,7 +56,7 @@ def copy_result_files(source_dir, target_dir):
         return
 
     try:
-        subprocess.run(["rsync", "-av", f'{source_dir}/', f'{target_dir}/'], check=True)
+        subprocess.run(["cp", "-r", f'{source_dir}', f'{target_dir}'], check=True)
         print("All results copied to git directory.")
 
     except subprocess.CalledProcessError as e:
