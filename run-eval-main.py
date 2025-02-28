@@ -7,7 +7,7 @@ def setup_environment():
     Set up the environment variables and ensure apptainer is available.
     """
 
-    subproces.run("source /etc/bash.bashrc.g5k", executable="/bin/bash")
+    subprocess.run("source /etc/bash.bashrc.g5k", executable="/bin/bash")
     subprocess.run("module", executable="/bin/bash")
 
     subprocess.run(
