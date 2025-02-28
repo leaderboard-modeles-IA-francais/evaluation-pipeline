@@ -7,6 +7,9 @@ def setup_environment():
     Set up the environment variables and ensure apptainer is available.
     """
 
+    subproces.run("source /etc/bash.bashrc.g5k", executable="/bin/bash")
+    subprocess.run("module", executable="/bin/bash")
+
     subprocess.run(
         "source /etc/profile.d/lmod.sh && module load apptainer",
         shell=True,
@@ -54,7 +57,8 @@ pip list
 python3 run-lighteval.py''',
         env=env,
         shell=True,
-        check=True
+        check=True,
+        executable="/bin/bash"
     )
 
 if __name__ == "__main__":
