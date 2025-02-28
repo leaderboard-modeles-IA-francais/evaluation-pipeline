@@ -10,10 +10,7 @@ def setup_environment():
     subprocess.run(
         "source /etc/profile.d/lmod.sh && env",
         shell=True,
-        executable="/bin/bash",
-        capture_output=True,
-        text=True
-    )
+        executable="/bin/bash")
 
     # Check if 'module' command exists and try to load apptainer
     try:
