@@ -46,6 +46,8 @@ def git_commit_push(modified_repo):
         print(e.stderr)
 
 def copy_result_files(source_dir, target_dir):
+    print(f"Trying to copy {source_dir} into {target_dir}")
+
     # Check if source directory exists
     if not os.path.exists(source_dir):
         print(f"Error: Directory '{source_dir}' does not exist.")
@@ -85,5 +87,6 @@ def push(results_dir):
     git_commit_push("results")
 
 if __name__ == "__main__":
-    print("Trying to push results")
-    push(sys.argv[1])
+    results = sys.argv[1]
+    print(f"Trying to push {results} results")
+    push(results)
