@@ -7,8 +7,8 @@ def setup_environment():
     Set up the environment variables and ensure apptainer is available.
     """
 
-    subprocess.run("source /etc/bash.bashrc.g5k", executable="/bin/bash")
-    subprocess.run("module", executable="/bin/bash")
+    subprocess.run("source /etc/bash.bashrc.g5k", shell=True, executable="/bin/bash")
+    subprocess.run("module", shell=True, executable="/bin/bash")
 
     subprocess.run(
         "source /etc/profile.d/lmod.sh && module load apptainer",
