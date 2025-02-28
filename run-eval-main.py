@@ -4,6 +4,8 @@ from pathlib import Path
 
 def setup_environment():
     # Load modules and execute apptainer
+    subprocess.run(["echo", "$HOSTNAME"], check=True)
+    subprocess.run(["pwd"], check=True)
     subprocess.run(["module", "load", "apptainer"], check=True)
 
     # Get environment variables after module load
