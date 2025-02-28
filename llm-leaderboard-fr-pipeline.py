@@ -38,15 +38,6 @@ def post_execute_callback(a_pipeline, a_node):
         results[model_name]['bac-fr'] = metrics['community:bac-fr:0 | bac-fr-qem'] * 100
         results[model_name]['pr-fouras'] = metrics['community:pr-fouras:0 | pr-fouras-qem'] * 100
         print_results()
-
-        #TODO: Check artifacts exist
-        local_json = completed.artifacts['data file'].get_local_copy()
-        # Doing some stuff with file from other Task in current Task
-        with open(local_json) as data_file:
-            file_text = data_file.read()
-
-        push_results.push(results)
-
     return
 
 pipe = PipelineController(
