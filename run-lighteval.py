@@ -7,7 +7,7 @@ from lighteval.pipeline import ParallelismManager, Pipeline, PipelineParameters
 from lighteval.utils.utils import EnvConfig
 
 unix_user=os.environ.get("USER")
-output_dir=f"/tmp/{unix_user}-runtime-dir/results"
+output_dir=f"/tmp/{unix_user}-runtime-dir/results/clearML_musa"
 tasks_path=Path(f"tasks/french_evals.py")
 
 # FIXME get task by id instead

@@ -39,8 +39,9 @@ fi
 
 pip list
 
-NGPUSPERNODES=$(nvidia-smi --query-gpu=name --format=csv,noheader | wc -l)
-NGPUS=$(($NGPUSPERNODES*($NNODES+1)))
+## Dynamic number of gpu per node and total gpus
+#NGPUSPERNODES=$(nvidia-smi --query-gpu=name --format=csv,noheader | wc -l)
+#NGPUS=$(($NGPUSPERNODES*($NNODES+1)))
 
 python3 run-lighteval.py
 
