@@ -46,6 +46,8 @@ pip list
 #NGPUS=$(($NGPUSPERNODES*($NNODES+1)))
 
 python3 run-lighteval.py
+rm -rf $DETAIL_DIR
+mv $RESULT_DIR/results $RESULT_DIR/clearML_musa
 
 export HF_USER_ACCESS_GIT=$(cat ~/.hf_push_user)
 export HF_TOKEN_ACCESS_GIT=$(cat ~/.hf_push_token)
