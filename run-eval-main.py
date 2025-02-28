@@ -17,21 +17,11 @@ def setup_environment():
 
     # Check if 'module' command exists and try to load apptainer
     try:
-        subprocess.run(["module", "load", "apptainer"], check=True)
+        subprocess.run(["module", "load", "apptainer"], shell=True, check=True)
         print("Successfully loaded apptainer module.")
     except FileNotFoundError:
         # If 'module' is not found, assume apptainer is in the PATH or set the path explicitly
         print("Module command not found. Attempting to use apptainer directly.")
-
-    # Verify if apptainer is available
-    try:
-        subprocess.run(["which", "apptainer"], check=True)
-        print("Apptainer executable found.")
-    except subprocess.CalledProcessError:
-        # If apptainer is not in PATH, provide an alternative path (e.g., where you installed it)
-        apptainer_path = "/path/to/your/apptainer"  # Replace with the actual path
-        os.environ["PATH"] += f":{apptainer_path}"
-        print(f"Added apptainer to PATH: {apptainer_path}")
 
     return os.environ.copy()
 
