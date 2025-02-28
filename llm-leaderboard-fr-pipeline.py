@@ -97,14 +97,14 @@ for model in models:
 
     # Compute number of nodes for musa
     # Get number of gpus to use (6 * 2 gpus)
-    nb_available_gpus = 8
+    nb_available_gpus = 4
     for j in range(min(nb_available_gpus, num_attention_heads), 1, -1):
         if num_attention_heads % j == 0 :
             nb_gpus = j
             break
 
     # Get number of nodes to use
-    nb_gpus_per_node = 4
+    nb_gpus_per_node = 2
     nb_nodes = math.ceil(nb_gpus / nb_gpus_per_node)
 
     task_name = f"eval_{model}"
@@ -117,11 +117,11 @@ for model in models:
         parameter_override={
             #'General/dataset_url': '${stage_data.artifacts.dataset.url}',
             'General/model': model,
-            'General/cluster': 'chuc',
+            'General/cluster': 'musa',
             'General/tensor_parallel_size': str(nb_gpus),
             'General/nb_nodes': str(nb_nodes),
-            'General/gpu_memory_utilization': 0.8,
-            'General/tasks': 'community|bac-fr|0|0',
+            'General/gpu_memory_utilization': 0.5,
+            'General/tasks': 'community|bac-fr|0|0,community|ifeval-fr|0|0,community|pr-fouras|0|0,community|gpqa-fr|0|0',
         },
         execution_queue='national_clusters',
         #pre_execute_callback=pre_execute_callback_example,
