@@ -25,6 +25,7 @@ parameters = {
     'tasks': 'community|bac-fr|0|0,community|ifeval-fr|0|0,community|pr-fouras|0|0,community|gpqa-fr|0|0',
     'max_model_length': 8192,
     'use_chat_template': True,
+    'tokenizer_mode': 'auto',
 }
 
 task.connect(parameters)
@@ -53,6 +54,7 @@ model_config = VLLMModelConfig(
     enforce_eager=parameters['enforce_eager'],
     max_model_length=parameters['max_model_length'],
     use_chat_template=parameters['use_chat_template'],
+    tokenizer_mode=parameters['tokenizer_mode'],
 )
 
 pipeline = Pipeline(
