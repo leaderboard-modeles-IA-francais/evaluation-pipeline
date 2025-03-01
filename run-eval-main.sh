@@ -2,7 +2,7 @@
 
 module load apptainer
 
-apptainer exec --no-mount home --nv --bind $PWD --bind /var/lib/oar  --bind ~/.hf_token --bind ~/.hf_push_user --bind ~/.hf_push_token  --bind ~/.ssh --bind ~/clearml.conf ~/llm_benchmark_fr.sif bash -c '
+apptainer exec --no-mount home --nv --bind $PWD --bind ~/test-chat-templates.py --bind /var/lib/oar  --bind ~/.hf_token --bind ~/.hf_push_user --bind ~/.hf_push_token  --bind ~/.ssh --bind ~/clearml.conf ~/llm_benchmark_fr.sif bash -c '
 
 echo "inside container"
 echo $PWD
@@ -46,11 +46,5 @@ pip list
 #NGPUSPERNODES=$(nvidia-smi --query-gpu=name --format=csv,noheader | wc -l)
 #NGPUS=$(($NGPUSPERNODES*($NNODES+1)))
 
-python3 run-lighteval.py
-rm -rf $DETAIL_DIR
-mv $OUTPUT_DIR/results $RESULT_DIR
-
-export HF_USER_ACCESS_GIT=$(cat ~/.hf_push_user)
-export HF_TOKEN_ACCESS_GIT=$(cat ~/.hf_push_token)
-python3 push_results.py $RESULT_DIR
+python3 ~/test-chat-templates.py
 '
