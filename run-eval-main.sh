@@ -2,7 +2,7 @@
 
 module load apptainer
 
-apptainer exec --no-mount home --nv --bind $PWD --bind /var/lib/oar  --bind ~/.hf_token --bind ~/.ssh --bind ~/clearml.conf ~/llm_benchmark_fr.sif bash -c '
+apptainer exec --no-mount home --nv --bind $PWD --bind /var/lib/oar  --bind ~/.hf_token --bind ~/.hf_push_user --bind ~/.hf_push_token  --bind ~/.ssh --bind ~/clearml.conf ~/llm_benchmark_fr.sif bash -c '
 
 echo "inside container"
 echo $PWD
@@ -15,22 +15,42 @@ export TRITON_CACHE_DIR=${TMP_DIR}/triton
 mkdir -p ${TRITON_CACHE_DIR}
 export VLLM_CONFIG_ROOT=${TMP_DIR}/.config/vllm
 mkdir -p ${VLLM_CONFIG_ROOT}
+export OUTPUT_DIR=$TMP_DIR/results
+export DETAIL_DIR=$OUTPUT_DIR/details
+export RESULT_DIR=$OUTPUT_DIR/clearML-musa
 
 HF_TOKEN=$(cat ~/.hf_token)
 
 huggingface-cli login --token ${HF_TOKEN}
 
-ray start --head --port=6379
+NODES=($(cat ${OAR_FILE_NODES} | uniq | grep -v ${HOSTNAME}))
+NNODES=${#NODES[@]}
+echo "Number of nodes: $(($NNODES+1))"
+echo "Current node: ${HOSTNAME}"
 
-NODES=$(cat ${OAR_FILE_NODES} | uniq | grep -v ${HOSTNAME})
-echo "Other nodes: ${NODES}"
-for host in $NODES;
-do
-  ssh $host "bash -s" < run-eval-workers.sh $(hostname -I | cut -d " " -f1)
-done
+if (($NNODES>0)); then
+   ray start --head --port=6379
+   for ((i=0; i<${NNODES}; i++));
+   do
+	   echo "Other nodes: Index $i - Node ${NODES[i]}"
+	   ssh ${NODES[i]} "bash -s" < run-eval-workers.sh $(hostname -I | cut -d " " -f1)
+   done
+   ray status
+else
+   export VLLM_WORKER_MULTIPROC_METHOD=spawn
+fi
 
-ray status
 pip list
 
+## Dynamic number of gpu per node and total gpus
+#NGPUSPERNODES=$(nvidia-smi --query-gpu=name --format=csv,noheader | wc -l)
+#NGPUS=$(($NGPUSPERNODES*($NNODES+1)))
+
 python3 run-lighteval.py
+rm -rf $DETAIL_DIR
+mv $OUTPUT_DIR/results $RESULT_DIR
+
+export HF_USER_ACCESS_GIT=$(cat ~/.hf_push_user)
+export HF_TOKEN_ACCESS_GIT=$(cat ~/.hf_push_token)
+python3 push_results.py $RESULT_DIR
 '
