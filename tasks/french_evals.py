@@ -360,6 +360,41 @@ def prompt_gpqa_fr(line, task_name: str = None):
         instruction=instruction,
     )
 
+# sornette prompt function
+def prompt_sornette(line, task_name: str = None):
+    choices = ['burlesque et fantaisiste', 'ludique et didactique', 'insidieux et mensonger', 'moral et accablant']
+    random.shuffle(choices)
+    gold_index = choices.index(line["gold"])
+    instruction = "Répondre à la question par A ou B ou C ou D.\n\n"
+    query = f"Texte: {line['text']}\n\n"
+    query += "Question: Le texte est-il:\n"
+    query += "".join([f"{key}. {choice}\n" for key, choice in zip(LETTER_INDICES, choices)])
+    query += "Réponse: "
+    return Doc(
+        task_name=task_name,
+        query=f"{instruction}{query}",
+        choices=LETTER_INDICES[: len(choices)],
+        gold_index=gold_index,
+        instruction=instruction,
+    )
+
+# kangourou-to prompt function
+def prompt_kangourou_to(line, task_name: str = None):
+    choices = line["choices"]
+    random.shuffle(choices)
+    gold_index = choices.index(line["gold"])
+    instruction = "Répondre à la question par A ou B ou C ou D ou E.\n\n"
+    query = f"Question: {line['question']}\n\n"
+    query += "".join([f"{key}. {choice}\n" for key, choice in zip(LETTER_INDICES, choices)])
+    query += "Réponse: "
+    return Doc(
+        task_name=task_name,
+        query=f"{instruction}{query}",
+        choices=LETTER_INDICES[: len(choices)],
+        gold_index=gold_index,
+        instruction=instruction,
+    )
+
 
 # BAC-fr prompt function
 def prompt_bac_fr(line, task_name: str = None):
@@ -387,6 +422,7 @@ def prompt_pr_fouras(line, task_name: str = None):
     return Doc(task_name=task_name, query=prompt, choices=[line["reponse"]], gold_index=0, instruction="")
 
 
+
 DSDIR = Path(os.getenv("DATASETS_DIRECTORY", "fr-gouv-coordination-ia"))
 # IFEVal-fr task
 ifeval_fr_task = LightevalTaskConfig(
@@ -411,6 +447,42 @@ gpqa_fr_task = LightevalTaskConfig(
     suite=["community"],
     prompt_function=prompt_gpqa_fr,
     hf_repo=str(DSDIR / "gpqa-fr"),
+    hf_subset="default",
+    hf_avail_splits=["train"],
+    evaluation_splits=["train"],
+    few_shots_split=None,
+    few_shots_select="random_sampling",
+    generation_size=1,
+    metric=[Metrics.loglikelihood_acc],
+    stop_sequence=["\n"],
+    trust_dataset=True,
+    version=0,
+)
+
+# Sornette task
+sornette_task = LightevalTaskConfig(
+    name="sornette",
+    suite=["community"],
+    prompt_function=prompt_sornette,
+    hf_repo=str(DSDIR / "sornette"),
+    hf_subset="default",
+    hf_avail_splits=["train"],
+    evaluation_splits=["train"],
+    few_shots_split=None,
+    few_shots_select="random_sampling",
+    generation_size=1,
+    metric=[Metrics.loglikelihood_acc],
+    stop_sequence=["\n"],
+    trust_dataset=True,
+    version=0,
+)
+
+# Kangourou-to task
+kangourou_to_task = LightevalTaskConfig(
+    name="kangourou-to",
+    suite=["community"],
+    prompt_function=prompt_kangourou_to,
+    hf_repo=str(DSDIR / "kangourou-to"),
     hf_subset="default",
     hf_avail_splits=["train"],
     evaluation_splits=["train"],
@@ -460,4 +532,4 @@ pr_fouras_task = LightevalTaskConfig(
 )
 
 # STORE YOUR EVALS
-TASKS_TABLE = [ifeval_fr_task, gpqa_fr_task, bac_fr_task, pr_fouras_task]
+TASKS_TABLE = [ifeval_fr_task, gpqa_fr_task, bac_fr_task, pr_fouras_task, sornette_task, kangourou_to_task]
