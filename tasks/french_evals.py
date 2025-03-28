@@ -47,7 +47,7 @@ from lighteval.metrics.utils.metric_utils import (
     SampleLevelMetricGrouping,
 )
 from lighteval.tasks.default_prompts import LETTER_INDICES
-from lighteval.tasks.extended.ifeval.main import ifeval_metrics
+from lighteval.tasks.extended.ifeval.main import ifeval_metric, agg_inst_level_acc, submetric_names 
 from lighteval.tasks.lighteval_task import LightevalTaskConfig
 from lighteval.tasks.requests import Doc
 from lighteval.utils.utils import as_list
@@ -94,6 +94,7 @@ def helm_normalizer_fr(text: str) -> str:
         return text.lower()
 
     def _tokenize(text):
+        text = re.split(r'</\w*>',text)[-1]    ### dethinker or drop pre-answer
         text = lower(text)
         text = re.sub(r"['\'’`]", " ", text)
         text = remove_articles(text)
@@ -147,6 +148,7 @@ def math_normalizer(text: str) -> str:
     
 
     def _tokenize(text):
+        text = re.split(r'</th\w*>',text)[-1]    ### dethinker
         text = lower(text)
         text = comma_to_point(text)
         text = clean_math_expressions(text)
@@ -158,7 +160,101 @@ def math_normalizer(text: str) -> str:
     tokens = [homogeneize_numbers(t) for t in _tokenize(text)]
     return "".join([t for t in tokens if t != ""]).strip()
     
+## Quizz normalizer
+def quizz_normalizer(text: str) -> str:
+    """for generation mode choice question"""
+    
+    def remove_articles(text: str) -> str:
+        return re.sub(r"\b(le |la |les |l |un |une |des )", "", text)
+    
+    def remove_punc(text: str) -> str:
+        punctuation = string.punctuation
+        # Regex: removes all punctuation except when it is between two digits (e.g., 54,7)
+        regex = rf'(?<!\d)[{punctuation}](?!\d)|(?<=\D)[{punctuation}]+|[{punctuation}]+(?=\D)|(?<=^)[{punctuation}]+|[{punctuation}]+(?=$)'
+        return re.sub(regex, "", text)
 
+    def _tokenize(text):
+        text = re.split(r'</\w*>',text)[-1]
+        
+        ### dethinker or drop pre-answer
+        text = re.sub(r"['\'’`]", " ", text)
+        text = remove_articles(text)
+        return re.split(" ", text)
+
+    tokens = [remove_punc(t) for t in _tokenize(text)]
+    return " ".join([t for t in tokens if t != ""]).strip()
+
+## custom Metric for generative choice
+class GenerationQuizzAcc:
+    def __init__(
+        self,
+        aggregation_function: Callable[[list[float]], float] = max,
+        normalize_gold: Callable[[str], str] | None = None,
+        normalize_pred: Callable[[str], str] | None = None,
+    ):
+        """An exact match class.
+
+        Args:
+            aggregation_function (callable, optional): How to aggregate the item results. Defaults to max.
+                Used if there are several golds or predictions on which scores were computed.
+            normalize_gold (callable, optional): Function to use to normalize the reference strings.
+                Defaults to None if no normalization is applied.
+            normalize_pred (callable, optional): Function to use to normalize the predicted strings.
+                Defaults to None if no normalization is applied.
+        """
+        self.aggregation_function = aggregation_function
+        self.normalize_gold = normalize_gold
+        self.normalize_pred = normalize_pred
+
+    def compute(self, golds: list[str], predictions: list[str], **kwargs) -> float:
+        """Computes the metric over a list of golds and predictions for one single sample.
+
+        Args:
+            golds (list[str]): Reference targets
+            predictions (list[str]): Predicted strings
+
+        Returns:
+            float: Aggregated score over the current sample's items.
+        """
+        results = []
+        # We might need to flatten golds if they are a list of lists
+        for gold in golds:
+            for pred in predictions:
+                results.append(self.compute_one_item(gold=gold, pred=pred))
+        return self.aggregation_function(results)
+
+    def compute_one_item(
+        self,
+        gold: str,
+        pred: str,
+    ) -> float:
+        """Compares two strings only.
+
+        Args:
+            gold (str): One of the possible references
+            pred (str): One of the possible predictions
+
+        Returns:
+            float: The exact match score. Will be 1 for a match, 0 otherwise.
+        """
+        if not pred:
+            return 0
+
+        gold = gold.strip()
+        pred = pred.strip()
+
+        if self.normalize_gold:
+            gold = self.normalize_gold(gold)
+        if self.normalize_pred:
+            pred = self.normalize_pred(pred)
+
+        if pred.startswith(gold): # prefix em
+            return 1 
+        if pred.endswith(gold): # suffix em
+            return 1
+        if gold == pred: # strict em
+            return 1 
+        return 1 if gold+' ' in pred.split('\n')[-1] else 0
 
 ## custom Metric for bac-fr and pr-fouras
 class BacPrefixSuffixExactMatch:
@@ -306,7 +402,37 @@ class PFourasPrefixSuffixExactMatch:
             return 1
         return 1 if gold == pred else 0 # strict em
 
+generation_quizz_acc = SampleLevelMetric(
+    metric_name="acc",
+    sample_level_fn=GenerationQuizzAcc(
+        normalize_gold=quizz_normalizer,
+        normalize_pred=quizz_normalizer,
+    ).compute,
+    category=MetricCategory.GENERATIVE,
+    use_case=MetricUseCase.ACCURACY,
+    corpus_level_fn=np.mean,
+    higher_is_better=True,
+)
 
+def custom_ifeval_metric(predictions: list[str], formatted_doc: Doc, **kwargs) -> dict:
+    predictions[0] = re.split(r'</th\w*>',predictions[0])[-1]    ### dethinker
+    return ifeval_metric(predictions, formatted_doc)
+
+ifeval_metrics = SampleLevelMetricGrouping(
+    metric_name=submetric_names,
+    higher_is_better={n: True for n in submetric_names},
+    category=MetricCategory.GENERATIVE,
+    use_case=MetricUseCase.ACCURACY,
+    sample_level_fn=custom_ifeval_metric,
+    corpus_level_fn={
+        "prompt_level_strict_acc": np.mean,
+        "inst_level_strict_acc": agg_inst_level_acc,
+        "prompt_level_loose_acc": np.mean,
+        "inst_level_loose_acc": agg_inst_level_acc,
+    },
+)
+
+    
 bac_prefixsuffix_quasi_exact_match = SampleLevelMetric(
     metric_name="bac-fr-qem",
     sample_level_fn=BacPrefixSuffixExactMatch(
@@ -436,7 +562,6 @@ ifeval_fr_task = LightevalTaskConfig(
     evaluation_splits=["train"],
     few_shots_split="train",
     few_shots_select="random_sampling",
-    generation_size=2048,
     stop_sequence=[],  # no stop sequence, will use eot token
     version="0.1",  # select your metric in Metrics
 )
@@ -452,9 +577,8 @@ gpqa_fr_task = LightevalTaskConfig(
     evaluation_splits=["train"],
     few_shots_split=None,
     few_shots_select="random_sampling",
-    generation_size=1,
-    metric=[Metrics.loglikelihood_acc],
-    stop_sequence=["\n"],
+    metric=[generation_quizz_acc],
+    stop_sequence=[],
     trust_dataset=True,
     version=0,
 )
@@ -470,9 +594,8 @@ sornette_task = LightevalTaskConfig(
     evaluation_splits=["train"],
     few_shots_split=None,
     few_shots_select="random_sampling",
-    generation_size=1,
-    metric=[Metrics.loglikelihood_acc],
-    stop_sequence=["\n"],
+    metric=[generation_quizz_acc],
+    stop_sequence=[],
     trust_dataset=True,
     version=0,
 )
@@ -488,9 +611,8 @@ kangourou_to_task = LightevalTaskConfig(
     evaluation_splits=["train"],
     few_shots_split=None,
     few_shots_select="random_sampling",
-    generation_size=1,
-    metric=[Metrics.loglikelihood_acc],
-    stop_sequence=["\n"],
+    metric=[generation_quizz_acc],
+    stop_sequence=[],
     trust_dataset=True,
     version=0,
 )
@@ -506,7 +628,6 @@ bac_fr_task = LightevalTaskConfig(
     evaluation_splits=["train"],
     few_shots_split=None,
     few_shots_select="random_sampling",
-    generation_size=2048,
     metric=[bac_prefixsuffix_quasi_exact_match],
     stop_sequence=[],
     trust_dataset=True,
@@ -524,7 +645,6 @@ pr_fouras_task = LightevalTaskConfig(
     evaluation_splits=["train"],
     few_shots_split=None,
     few_shots_select="random_sampling",
-    generation_size=2048,
     metric=[pfouras_prefixsuffix_quasi_exact_match],
     stop_sequence=[],
     trust_dataset=True,
