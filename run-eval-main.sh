@@ -38,6 +38,7 @@ if (($NNODES>0)); then
    ray status
 else
    export VLLM_WORKER_MULTIPROC_METHOD=spawn
+   export VLLM_SKIP_P2P_CHECK=1
 fi
 
 pip list
