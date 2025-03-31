@@ -37,16 +37,15 @@ if (($NNODES>0)); then
    done
    ray status
 else
-   echo "Mononoeud so declare envvar"
+   echo " /!\ Mononoeud setup but those env variables that were needed are now problematic /!\ "
    # export VLLM_WORKER_MULTIPROC_METHOD=spawn
    # export VLLM_SKIP_P2P_CHECK=1
 fi
 
-# pip list
+#pip list
 
 python3 run-lighteval-interactive.py
-rm -rf $DETAIL_DIR
-mv $OUTPUT_DIR/results $RESULT_DIR
+rsync -avzh --remove-source-files $OUTPUT_DIR/results/* $RESULT_DIR
 
 export HF_USER_ACCESS_GIT=$(cat ~/.hf_push_user)
 export HF_TOKEN_ACCESS_GIT=$(cat ~/.hf_push_token)
