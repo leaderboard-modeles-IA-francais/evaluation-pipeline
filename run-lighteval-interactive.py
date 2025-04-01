@@ -6,11 +6,11 @@ from lighteval.models.vllm.vllm_model import VLLMModelConfig
 from lighteval.pipeline import ParallelismManager, Pipeline, PipelineParameters
 from lighteval.utils.utils import EnvConfig
 
-def main():
+def main(model):
     unix_user=os.environ.get("USER")
     output_dir=f"/tmp/{unix_user}-runtime-dir/results"
     #tasks_path=Path(f"tasks/french_evals.py")
-	tasks_path=Path(f"tasks/french_evals_w_reasoning.py")
+    tasks_path=Path(f"tasks/french_evals_w_reasoning.py")
 
     # FIXME get task by id instead
     # task = Task.init(project_name = "LLM Leaderboard FR", task_name = "eval_model")
@@ -19,13 +19,13 @@ def main():
     # vllm_model.py:211: FutureWarning: It is strongly recommended to run mistral models with `--tokenizer-mode "mistral"` to ensure correct encoding and decoding.
 
     parameters = {
-        'model': 'meta-llama/Llama-3.2-3B-Instruct',
+        'model': model,
         'dtype': 'bfloat16',
         'gpu_memory_utilization': 0.5,
         'tensor_parallel_size': 2,
         'enforce_eager': True,
         'tasks': 'community|bac-fr|0|0,community|ifeval-fr|0|0,community|pr-fouras|0|0,community|gpqa-fr|0|0',
-        'max_model_length': 8192,
+        'max_model_length': 32768,
         'use_chat_template': True,
     }
 
@@ -53,7 +53,7 @@ def main():
         gpu_memory_utilization=parameters['gpu_memory_utilization'],
         tensor_parallel_size=parameters['tensor_parallel_size'],
         enforce_eager=parameters['enforce_eager'],
-        #max_model_length=parameters['max_model_length'],
+        max_model_length=parameters['max_model_length'],
         use_chat_template=parameters['use_chat_template'],
     )
 
@@ -69,7 +69,7 @@ def main():
     pipeline.show_results()
 
     final = pipeline.get_results()
-    logger = task.get_logger()
+    # logger = task.get_logger()
     print(final)
     # for task_name, metrics in final['results'].items():
     #     for k, v in metrics.items():
@@ -79,4 +79,16 @@ def main():
 
 # Run the main function
 if __name__ == "__main__":
-    main()
+
+    ## Non reasoning models
+    # model_list =["meta-llama/Llama-3.2-3B-Instruct", 
+    #              "mistralai/Mistral-7B-Instruct-v0.3", 
+    #              "microsoft/phi-4"]
+
+    ## Reasoning models
+    # model_list =["deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B", 
+    #	         "deepseek-ai/DeepSeek-R1-Distill-Qwen-7B", 
+    #	         "deepseek-ai/DeepSeek-R1-Distill-Llama-8B",]
+    model_list =["deepseek-ai/DeepSeek-R1-Distill-Qwen-32B"]
+    for model in model_list:
+        main(model)
