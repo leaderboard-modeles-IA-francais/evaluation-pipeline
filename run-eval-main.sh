@@ -48,9 +48,14 @@ pip list
 
 python3 run-lighteval.py
 rm -rf $DETAIL_DIR
-mv $OUTPUT_DIR/results $RESULT_DIR
+if [ -d "$OUTPUT_DIR/results" ]; then
+  mv $OUTPUT_DIR/results $RESULT_DIR
 
-export HF_USER_ACCESS_GIT=$(cat ~/.hf_push_user)
-export HF_TOKEN_ACCESS_GIT=$(cat ~/.hf_push_token)
-python3 push_results.py $RESULT_DIR
+  export HF_USER_ACCESS_GIT=$(cat ~/.hf_push_user)
+  export HF_TOKEN_ACCESS_GIT=$(cat ~/.hf_push_token)
+  python3 push_results.py $RESULT_DIR
+else
+  echo "No $OUTPUT_DIR/results directory, error"
+  exit 1
+fi
 '
