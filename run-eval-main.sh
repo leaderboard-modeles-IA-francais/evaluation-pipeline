@@ -17,7 +17,7 @@ export VLLM_CONFIG_ROOT=${TMP_DIR}/.config/vllm
 mkdir -p ${VLLM_CONFIG_ROOT}
 export OUTPUT_DIR=$TMP_DIR/results
 export DETAIL_DIR=$OUTPUT_DIR/details
-export RESULT_DIR=$OUTPUT_DIR/clearML-sprint1
+export RESULT_DIR=$OUTPUT_DIR/clearML-sprint1-wr
 
 HF_TOKEN=$(cat ~/.hf_token)
 
