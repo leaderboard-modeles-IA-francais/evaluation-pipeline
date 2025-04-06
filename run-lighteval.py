@@ -53,7 +53,7 @@ def main():
         gpu_memory_utilization=parameters['gpu_memory_utilization'],
         tensor_parallel_size=parameters['tensor_parallel_size'],
         enforce_eager=parameters['enforce_eager'],
-        max_model_length=parameters['max_model_length'],
+        #max_model_length=parameters['max_model_length'],
         use_chat_template=parameters['use_chat_template'],
     )
 
