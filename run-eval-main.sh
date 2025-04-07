@@ -36,8 +36,6 @@ if (($NNODES>0)); then
 	   ssh ${NODES[i]} "bash -s" < run-eval-workers.sh $(hostname -I | cut -d " " -f1)
    done
    ray status
-else
-   export VLLM_WORKER_MULTIPROC_METHOD=spawn
 fi
 
 pip list
