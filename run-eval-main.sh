@@ -1,9 +1,5 @@
 #!/bin/bash
 
-module load apptainer
-
-apptainer exec --no-mount home --nv --bind $PWD --bind /var/lib/oar  --bind ~/.hf_token --bind ~/.hf_push_user --bind ~/.hf_push_token  --bind ~/.ssh --bind ~/clearml.conf ~/llm_benchmark_fr.sif bash -c '
-
 echo "inside container"
 echo $PWD
 
@@ -56,4 +52,3 @@ else
   echo "No $OUTPUT_DIR/results directory, error"
   exit 1
 fi
-'
