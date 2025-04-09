@@ -25,7 +25,6 @@ def main():
         'tensor_parallel_size': 4,
         'enforce_eager': True,
         'tasks': 'community|bac-fr|0|0,community|ifeval-fr|0|0,community|pr-fouras|0|0,community|gpqa-fr|0|0',
-        'max_model_length': 8192,
         'use_chat_template': True,
     }
 
