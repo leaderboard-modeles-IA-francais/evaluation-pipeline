@@ -1,10 +1,5 @@
 #!/bin/bash
 
-module load apptainer
-
-apptainer exec --no-mount home --nv --bind $PWD --bind /var/lib/oar  --bind ~/.hf_token --bind ~/.hf_push_user --bind ~/.hf_push_token  --bind ~/.ssh --bind ~/clearml.conf ~/llm_benchmark_fr.sif bash -c '
-
-echo "inside container"
 echo $PWD
 
 export TMP_DIR=/tmp/${USER}-runtime-dir
@@ -17,7 +12,7 @@ export VLLM_CONFIG_ROOT=${TMP_DIR}/.config/vllm
 mkdir -p ${VLLM_CONFIG_ROOT}
 export OUTPUT_DIR=$TMP_DIR/results
 export DETAIL_DIR=$OUTPUT_DIR/details
-export RESULT_DIR=$OUTPUT_DIR/clearML-musa
+export RESULT_DIR=$OUTPUT_DIR/clearML-sprint1-wr
 
 HF_TOKEN=$(cat ~/.hf_token)
 
@@ -36,8 +31,6 @@ if (($NNODES>0)); then
 	   ssh ${NODES[i]} "bash -s" < run-eval-workers.sh $(hostname -I | cut -d " " -f1)
    done
    ray status
-else
-   export VLLM_WORKER_MULTIPROC_METHOD=spawn
 fi
 
 pip list
@@ -58,4 +51,3 @@ else
   echo "No $OUTPUT_DIR/results directory, error"
   exit 1
 fi
-'
