@@ -4,6 +4,6 @@ langdetect==1.0.9
 triton==3.2.0
 clearml==1.18.0
 datasets==2.19.1
-lighteval[vllm,math] @ git+https://github.com/leaderboard-modeles-IA-francais/lighteval@feature/upstream_sync
+lighteval[vllm,math] @ git+https://github.com/leaderboard-modeles-IA-francais/lighteval@5f326ce916ade0aac6dfd818b4da266e774aa680
 torch==2.6.0
 clearml-agent==1.9.3
