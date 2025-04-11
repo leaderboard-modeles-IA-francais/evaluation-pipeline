@@ -71,7 +71,7 @@ def reorder_by_likes(pending_items):
         # Sort by submitted_time in ascending order
         sorted_list = sorted(
             pending_items,
-            key=lambda x: x[1].get('likes', ''),  # Use empty string as default if field is missing
+            key=lambda x: x[1].get('likes', 0),
             reverse=True  # False for oldest to newest (ascending)
         )
 

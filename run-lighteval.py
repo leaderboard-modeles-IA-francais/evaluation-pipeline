@@ -25,7 +25,6 @@ def main():
         'tensor_parallel_size': 4,
         'enforce_eager': True,
         'tasks': 'community|bac-fr|0|0,community|ifeval-fr|0|0,community|pr-fouras|0|0,community|gpqa-fr|0|0',
-        'max_model_length': 8192,
         'use_chat_template': True,
     }
 
@@ -53,7 +52,7 @@ def main():
         gpu_memory_utilization=parameters['gpu_memory_utilization'],
         tensor_parallel_size=parameters['tensor_parallel_size'],
         enforce_eager=parameters['enforce_eager'],
-        max_model_length=parameters['max_model_length'],
+        #max_model_length=parameters['max_model_length'],
         use_chat_template=parameters['use_chat_template'],
     )
 
