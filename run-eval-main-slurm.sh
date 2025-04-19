@@ -18,7 +18,7 @@ HF_TOKEN=$(cat ~/.hf_token)
 
 huggingface-cli login --token ${HF_TOKEN}
 
-NNODES=1
+NNODES=0
 echo "Number of nodes: $(($NNODES+1))"
 echo "Current node: ${HOSTNAME}"
 
