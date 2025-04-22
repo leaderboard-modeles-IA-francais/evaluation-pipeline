@@ -14,6 +14,8 @@ export OUTPUT_DIR=$TMP_DIR/results
 export DETAIL_DIR=$OUTPUT_DIR/details
 export RESULT_DIR=$OUTPUT_DIR/clearML-sprint1-wr
 
+pip install huggingface_hub[hf_xet]
+
 HF_TOKEN=$(cat ~/.hf_token)
 
 huggingface-cli login --token ${HF_TOKEN}
