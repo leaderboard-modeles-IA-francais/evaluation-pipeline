@@ -25,6 +25,11 @@ echo "Number of nodes: $(($NNODES+1))"
 echo "Current node: ${HOSTNAME}"
 
 if (($NNODES>0)); then
+   if (($NNODES>2)); then
+      export RAY_CGRAPH_submit_timeout=100
+      export RAY_CGRAPH_get_timeout=100
+   fi
+
    ray start --head --port=6379
    for ((i=0; i<${NNODES}; i++));
    do
