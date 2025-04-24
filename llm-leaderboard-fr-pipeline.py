@@ -78,23 +78,8 @@ for model in models:
         print("Failed to parse config.json")
         exit(1)
 
-    # TODO: Check entries are present or fail
-    # Get the number of attention heads (ensure it's an integer)
-    num_attention_heads = int(config.get("num_attention_heads", 0))
-    # Get max context size (ensure it's an integer)
-    max_position_embeddings = int(config.get("max_position_embeddings", 0))
-
-    # Compute number of nodes for musa
-    # Get number of gpus to use (6 * 2 gpus)
-    nb_available_gpus = 4
-    for j in range(min(nb_available_gpus, num_attention_heads), 1, -1):
-        if num_attention_heads % j == 0 :
-            nb_gpus = j
-            break
-
-    # Get number of nodes to use
+    nb_nodes = 2
     nb_gpus_per_node = 2
-    nb_nodes = math.ceil(nb_gpus / nb_gpus_per_node)
 
     task_name = f"eval_{model}"
     eval_tasks.append(task_name)
@@ -107,8 +92,8 @@ for model in models:
             #'General/dataset_url': '${stage_data.artifacts.dataset.url}',
             'General/model': model,
             'General/cluster': 'musa',
-            'General/tensor_parallel_size': str(nb_gpus),
             'General/nb_nodes': str(nb_nodes),
+            'General/nb_gpus_per_node': str(nb_gpus_per_nodes),
             'General/gpu_memory_utilization': 0.5,
             'General/tasks': 'community|bac-fr|0|0,community|ifeval-fr|0|0,community|pr-fouras|0|0,community|gpqa-fr|0|0',
         },
