@@ -26,7 +26,7 @@ def main():
         'nb_nodes': 1,
         'enforce_eager': True,
         'tasks': 'community|bac-fr|0|0,community|ifeval-fr|0|0,community|pr-fouras|0|0,community|gpqa-fr|0|0',
-        'max_model_length': 8192,
+        'max_model_length': None,
         'use_chat_template': True,
     }
 
