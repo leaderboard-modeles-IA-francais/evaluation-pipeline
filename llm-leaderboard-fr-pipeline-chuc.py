@@ -20,10 +20,10 @@ continuation_behaviour = {
 }
 
 def print_results():
-    print(f"Model name | IFEVAL-FR | GPQA-FR | BAC-FR | PR-FOURAS")
+    print(f"Model name | IFEVAL-FR | GPQA-FR | BAC-FR")
     print( "-----------------------------------------------------")
     for m,r in results.items():
-        print(f"{m} | {r['ifeval-fr']} | {r['gpqa-fr']} | {r['bac-fr']} | {r['pr-fouras']}")
+        print(f"{m} | {r['ifeval-fr']} | {r['gpqa-fr']} | {r['bac-fr']}")
 
 
 def post_execute_callback(a_pipeline, a_node):
@@ -36,7 +36,6 @@ def post_execute_callback(a_pipeline, a_node):
         results[model_name]['ifeval-fr'] = (metrics['community:ifeval-fr:0 | prompt_level_strict_acc'] + metrics['community:ifeval-fr:0 | inst_level_strict_acc']) / 2 * 100
         results[model_name]['gpqa-fr'] = metrics['community:gpqa-fr:0 | acc'] * 100
         results[model_name]['bac-fr'] = metrics['community:bac-fr:0 | bac-fr-qem'] * 100
-        results[model_name]['pr-fouras'] = metrics['community:pr-fouras:0 | pr-fouras-qem'] * 100
         print(completed.get_registered_artifacts())
         print_results()
     return
@@ -96,7 +95,9 @@ for model in models:
             'General/nb_nodes': str(nb_nodes),
             'General/nb_gpus_per_node': str(nb_gpus_per_node),
             'General/gpu_memory_utilization': 0.5,
-            'General/tasks': 'community|bac-fr|0|0,community|ifeval-fr|0|0,community|pr-fouras|0|0,community|gpqa-fr|0|0',
+            'General/tasks': 'community|bac-fr|0|0,community|ifeval-fr|0|0,community|gpqa-fr|0|0',
+            'General/max_model_length': None,
+            'General/use_chat_template': True
         },
         execution_queue='national_clusters',
         #pre_execute_callback=pre_execute_callback_example,
