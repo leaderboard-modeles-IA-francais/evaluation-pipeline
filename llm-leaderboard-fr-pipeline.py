@@ -93,7 +93,7 @@ for model in models:
             'General/model': model,
             'General/cluster': 'musa',
             'General/nb_nodes': str(nb_nodes),
-            'General/nb_gpus_per_node': str(nb_gpus_per_nodes),
+            'General/nb_gpus_per_node': str(nb_gpus_per_node),
             'General/gpu_memory_utilization': 0.5,
             'General/tasks': 'community|bac-fr|0|0,community|ifeval-fr|0|0,community|pr-fouras|0|0,community|gpqa-fr|0|0',
         },
