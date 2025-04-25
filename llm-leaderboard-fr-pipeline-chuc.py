@@ -42,7 +42,7 @@ def post_execute_callback(a_pipeline, a_node):
     return
 
 pipe = PipelineController(
-  name="LLM Leaderboard FR Pipeline on musa", project=project_name, version="1.0.0"
+  name="LLM Leaderboard FR Pipeline on chuc", project=project_name, version="1.0.0"
   #continue_on_fail=True,
   #continue_on_abort=True,
   #skip_children_on_fail=False,
@@ -94,7 +94,7 @@ for model in models:
             'General/model': model,
             'General/cluster': 'chuc',
             'General/nb_nodes': str(nb_nodes),
-            'General/nb_gpus_per_node': str(nb_gpus_per_nodes),
+            'General/nb_gpus_per_node': str(nb_gpus_per_node),
             'General/gpu_memory_utilization': 0.5,
             'General/tasks': 'community|bac-fr|0|0,community|ifeval-fr|0|0,community|pr-fouras|0|0,community|gpqa-fr|0|0',
         },
