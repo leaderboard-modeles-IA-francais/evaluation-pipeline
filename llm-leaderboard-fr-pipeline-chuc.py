@@ -36,7 +36,6 @@ def post_execute_callback(a_pipeline, a_node):
         results[model_name]['ifeval-fr'] = (metrics['community:ifeval-fr:0 | prompt_level_strict_acc'] + metrics['community:ifeval-fr:0 | inst_level_strict_acc']) / 2 * 100
         results[model_name]['gpqa-fr'] = metrics['community:gpqa-fr:0 | acc'] * 100
         results[model_name]['bac-fr'] = metrics['community:bac-fr:0 | bac-fr-qem'] * 100
-        print(completed.get_registered_artifacts())
         print_results()
     return
 
@@ -51,7 +50,7 @@ pipe = PipelineController(
 eval_tasks = [ ]
 
 # Retrieve all models which need to be evaluated
-models = ["deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B"]
+models = pull_requests.models()
 
 for model in models:
     hf_token = os.environ.get("HF_TOKEN_ACCESS_MODELS")
@@ -92,8 +91,8 @@ for model in models:
             #'General/dataset_url': '${stage_data.artifacts.dataset.url}',
             'General/model': model,
             'General/cluster': 'chuc',
-            'General/nb_nodes': str(nb_nodes),
-            'General/nb_gpus_per_node': str(nb_gpus_per_node),
+            'General/nb_nodes': nb_nodes,
+            'General/nb_gpus_per_node': nb_gpus_per_node,
             'General/gpu_memory_utilization': 0.5,
             'General/tasks': 'community|bac-fr|0|0,community|ifeval-fr|0|0,community|gpqa-fr|0|0',
             'General/max_model_length': None,
