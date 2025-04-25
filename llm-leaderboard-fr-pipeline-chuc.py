@@ -88,7 +88,7 @@ for model in models:
         name=task_name,
         parents=[ ],
         base_task_project=project_name,
-        base_task_name='eval_model',
+        base_task_name='eval_model_chuc',
         parameter_override={
             #'General/dataset_url': '${stage_data.artifacts.dataset.url}',
             'General/model': model,
