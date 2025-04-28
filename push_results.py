@@ -65,7 +65,7 @@ def copy_result_files(source_dir, target_dir):
         print(f"Files copy failed with error code {e.returncode}")
         print(e.stderr)
 
-def push(results_dir):
+def push(results_dir, results_repo):
     # Define environment variables
     hf_user = os.environ.get("HF_USER_ACCESS_GIT")
     hf_token = os.environ.get("HF_TOKEN_ACCESS_GIT")
@@ -75,18 +75,19 @@ def push(results_dir):
         sys.exit()
 
     # Construct repository URL TODO Update for fr-gouv-coordination-ia when going production
-    repo_url = f"https://{hf_user}:{hf_token}@huggingface.co/datasets/fr-gouv-coordination-ia/results-dev"
+    repo_url = f"https://{hf_user}:{hf_token}@huggingface.co/datasets/fr-gouv-coordination-ia/" + results_repo
 
-    git_clone_or_pull(repo_url, "results")
+    git_clone_or_pull(repo_url, results_repo)
 
-    copy_result_files(results_dir, "results")
+    copy_result_files(results_dir, results_repo)
 
     # TODO do the same with requests and update requests status
     # Parse results to match requests and ensure the request status is OK
 
-    git_commit_push("results")
+    git_commit_push(results_repo)
 
 if __name__ == "__main__":
     results = sys.argv[1]
-    print(f"Trying to push {results} results")
-    push(results)
+    results_repo = sys.argv[2]
+    print(f"Trying to push {results} results to {results_repo}")
+    push(results, results_repo)

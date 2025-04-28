@@ -19,35 +19,32 @@ continuation_behaviour = {
     "skip_children_on_abort": False,
 }
 
+def print_results():
+    print(f"Model name | IFEVAL-FR | GPQA-FR | BAC-FR")
+    print( "-----------------------------------------------------")
+    for m,r in results.items():
+        print(f"{m} | {r['ifeval-fr']} | {r['gpqa-fr']} | {r['bac-fr']}")
+
 
 def post_execute_callback(a_pipeline, a_node):
     print("Completed Task id={}".format(a_node.executed))
+    if a_node.executed:
+        completed = Task.get_task(task_id=a_node.executed)
+        model_name = completed.get_parameter('General/model')
+        metrics = completed.get_reported_single_values()
+        results[model_name] = {}
+        results[model_name]['ifeval-fr'] = (metrics['community:ifeval-fr:0 | prompt_level_strict_acc'] + metrics['community:ifeval-fr:0 | inst_level_strict_acc']) / 2 * 100
+        results[model_name]['gpqa-fr'] = metrics['community:gpqa-fr:0 | acc'] * 100
+        results[model_name]['bac-fr'] = metrics['community:bac-fr:0 | bac-fr-qem'] * 100
+        print_results()
     return
 
 pipe = PipelineController(
-  name="LLM Leaderboard FR Pipeline", project=project_name, version="1.0.1"
+  name="LLM Leaderboard FR Pipeline on musa", project=project_name, version="1.0.0"
   #continue_on_fail=True,
   #continue_on_abort=True,
   #skip_children_on_fail=False,
   #skip_chlidren_on_abort=False
-)
-
-pipe.add_parameter(
-    name='cluster',
-    description='Cluster on which the tasks will be executed. Current available options are "musa", "chuc", "auto".',
-    default='musa'
-)
-
-pipe.add_parameter(
-    name='tasks',
-    description='Lighteval tasks to execute.',
-    default='community|bac-fr|0|0,community|ifeval-fr|0|0,community|pr-fouras|0|0,community|gpqa-fr|0|0'
-)
-
-pipe.add_parameter(
-    name='use_chat_template',
-    description='Whether to use chat templates or not.',
-    default=True
 )
 
 eval_tasks = [ ]
@@ -80,23 +77,8 @@ for model in models:
         print("Failed to parse config.json")
         exit(1)
 
-    # TODO: Check entries are present or fail
-    # Get the number of attention heads (ensure it's an integer)
-    num_attention_heads = int(config.get("num_attention_heads", 0))
-
-    # The max number of tokens of the model is not retrieved nor passed to the task since it is retrieved by lighteval and / or vllm from the model itself.
-
-    # Compute number of nodes for musa
-    # Get number of gpus to use (6 * 2 gpus)
-    nb_available_gpus = 4 # TODO: For testing purpose
-    for j in range(min(nb_available_gpus, num_attention_heads), 1, -1):
-        if num_attention_heads % j == 0 :
-            nb_gpus = j
-            break
-
-    # Get number of nodes to use
+    nb_nodes = 2
     nb_gpus_per_node = 2
-    nb_nodes = math.ceil(nb_gpus / nb_gpus_per_node)
 
     task_name = f"eval_{model}"
     eval_tasks.append(task_name)
@@ -108,13 +90,13 @@ for model in models:
         parameter_override={
             #'General/dataset_url': '${stage_data.artifacts.dataset.url}',
             'General/model': model,
-            'General/cluster': '${pipeline.cluster}',
+            'General/cluster': 'musa',
             'General/nb_nodes': nb_nodes,
             'General/nb_gpus_per_node': nb_gpus_per_node,
             'General/gpu_memory_utilization': 0.5,
-            'General/tasks': '${pipeline.tasks}',
+            'General/tasks': 'community|bac-fr|0|0,community|ifeval-fr|0|0,community|pr-fouras|0|0,community|gpqa-fr|0|0',
             'General/max_model_length': None,
-            'General/use_chat_template': '${pipeline.use_chat_template}'
+            'General/use_chat_template': True
         },
         execution_queue='national_clusters',
         #pre_execute_callback=pre_execute_callback_example,

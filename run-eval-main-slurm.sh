@@ -14,21 +14,17 @@ export OUTPUT_DIR=$TMP_DIR/results
 export DETAIL_DIR=$OUTPUT_DIR/details
 export RESULT_DIR=$OUTPUT_DIR/clearML-sprint1-wr
 
+pip install huggingface_hub[hf_xet]
+
 HF_TOKEN=$(cat ~/.hf_token)
 
 huggingface-cli login --token ${HF_TOKEN}
 
-NODES=($(cat ${OAR_FILE_NODES} | uniq | grep -v ${HOSTNAME}))
-NNODES=${#NODES[@]}
+NNODES=0
 echo "Number of nodes: $(($NNODES+1))"
 echo "Current node: ${HOSTNAME}"
 
 if (($NNODES>0)); then
-   if (($NNODES>2)); then
-      export RAY_CGRAPH_submit_timeout=100
-      export RAY_CGRAPH_get_timeout=100
-   fi
-
    ray start --head --port=6379
    for ((i=0; i<${NNODES}; i++));
    do
@@ -45,15 +41,13 @@ pip list
 #NGPUS=$(($NGPUSPERNODES*($NNODES+1)))
 
 python3 run-lighteval.py
+rm -rf $DETAIL_DIR
 if [ -d "$OUTPUT_DIR/results" ]; then
   mv $OUTPUT_DIR/results $RESULT_DIR
 
   export HF_USER_ACCESS_GIT=$(cat ~/.hf_push_user)
   export HF_TOKEN_ACCESS_GIT=$(cat ~/.hf_push_token)
-  python3 push_results.py $DETAIL_DIR "details-dev"
-  rm -rf $DETAIL_DIR
-  python3 push_results.py $RESULT_DIR "results-dev"
-
+  python3 push_results.py $RESULT_DIR
 else
   echo "No $OUTPUT_DIR/results directory, error"
   exit 1
