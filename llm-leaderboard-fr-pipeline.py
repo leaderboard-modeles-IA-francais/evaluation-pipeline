@@ -55,7 +55,7 @@ eval_tasks = [ ]
 # Retrieve all models which need to be evaluated
 models = pull_requests.models()
 
-for model in models[:1]:
+for model in models:
     hf_token = os.environ.get("HF_TOKEN_ACCESS_MODELS")
     if not hf_token:
         print("Error: HF_TOKEN_ACCESS_MODELS must be set in the environment.")
