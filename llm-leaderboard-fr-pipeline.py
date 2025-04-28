@@ -19,25 +19,9 @@ continuation_behaviour = {
     "skip_children_on_abort": False,
 }
 
-def print_results():
-    print(f"Model name | IFEVAL-FR | GPQA-FR | BAC-FR | PR-FOURAS")
-    print( "-----------------------------------------------------")
-    for m,r in results.items():
-        print(f"{m} | {r['ifeval-fr']} | {r['gpqa-fr']} | {r['bac-fr']} | {r['pr-fouras']}")
-
 
 def post_execute_callback(a_pipeline, a_node):
     print("Completed Task id={}".format(a_node.executed))
-    if a_node.executed:
-        completed = Task.get_task(task_id=a_node.executed)
-        model_name = completed.get_parameter('General/model')
-        metrics = completed.get_reported_single_values()
-        results[model_name] = {}
-        results[model_name]['ifeval-fr'] = (metrics['community:ifeval-fr:0 | prompt_level_strict_acc'] + metrics['community:ifeval-fr:0 | inst_level_strict_acc']) / 2 * 100
-        results[model_name]['gpqa-fr'] = metrics['community:gpqa-fr:0 | acc'] * 100
-        results[model_name]['bac-fr'] = metrics['community:bac-fr:0 | bac-fr-qem'] * 100
-        results[model_name]['pr-fouras'] = metrics['community:pr-fouras:0 | pr-fouras-qem'] * 100
-        print_results()
     return
 
 pipe = PipelineController(
