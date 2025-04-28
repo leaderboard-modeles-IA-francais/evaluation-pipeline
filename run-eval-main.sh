@@ -1,6 +1,5 @@
 #!/bin/bash
 
-echo "inside container"
 echo $PWD
 
 export TMP_DIR=/tmp/${USER}-runtime-dir

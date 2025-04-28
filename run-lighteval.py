@@ -46,7 +46,7 @@ def main():
         # Remove the 2 parameters below once your configuration is tested
         #override_batch_size=1,
         #max_samples=10
-)
+    )
 
     model_config = VLLMModelConfig(
         pretrained=parameters['model'],
