@@ -6,7 +6,7 @@ From: python:3.12-slim
 
 %post
     apt-get update \
-    && apt-get install -y --no-install-recommends git ssh gcc g++ wget \
+    && apt-get install -y --no-install-recommends git ssh gcc g++ wget git-lfs\
     && apt-get purge -y --auto-remove \
     && rm -rf /var/lib/apt/lists/*
     pip install --upgrade pip
