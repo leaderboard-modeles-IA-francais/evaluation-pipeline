@@ -22,9 +22,11 @@ def main():
         'model': 'meta-llama/Llama-3.2-3B-Instruct',
         'dtype': 'bfloat16',
         'gpu_memory_utilization': 0.5,
-        'tensor_parallel_size': 4,
+        'nb_gpus_per_node': 4,
+        'nb_nodes': 1,
         'enforce_eager': True,
         'tasks': 'community|bac-fr|0|0,community|ifeval-fr|0|0,community|pr-fouras|0|0,community|gpqa-fr|0|0',
+        'max_model_length': None,
         'use_chat_template': True,
     }
 
@@ -44,15 +46,15 @@ def main():
         # Remove the 2 parameters below once your configuration is tested
         #override_batch_size=1,
         #max_samples=10
-)
+    )
 
     model_config = VLLMModelConfig(
         pretrained=parameters['model'],
         dtype=parameters['dtype'],
         gpu_memory_utilization=parameters['gpu_memory_utilization'],
-        tensor_parallel_size=parameters['tensor_parallel_size'],
+        tensor_parallel_size=parameters['nb_nodes'] * parameters['nb_gpus_per_node'],
         enforce_eager=parameters['enforce_eager'],
-        #max_model_length=parameters['max_model_length'],
+        max_model_length=parameters['max_model_length'],
         use_chat_template=parameters['use_chat_template'],
     )
 
