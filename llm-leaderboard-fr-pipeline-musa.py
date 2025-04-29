@@ -94,7 +94,7 @@ for model in models:
             'General/nb_nodes': nb_nodes,
             'General/nb_gpus_per_node': nb_gpus_per_node,
             'General/gpu_memory_utilization': 0.5,
-            'General/tasks': 'community|bac-fr|0|0,community|ifeval-fr|0|0,community|pr-fouras|0|0,community|gpqa-fr|0|0',
+            'General/tasks': 'community|bac-fr|0|0,community|ifeval-fr|0|0,community|gpqa-fr|0|0',
             'General/max_model_length': None,
             'General/use_chat_template': True
         },
