@@ -48,6 +48,26 @@ python3 run-lighteval.py
 if [ -d "$OUTPUT_DIR/results" ]; then
   mv $OUTPUT_DIR/results $RESULT_DIR
 
+  ## The following is a hacky way of retrieving the folder
+  ## containing the prediction parquet files, in order to
+  ## add the log there.
+  ## It makes the assumption that there is alway a subdirectory
+  ## structure like details/provider/model/datetime/
+  PARQUET_DETAIL_DIR="$DETAIL_DIR"/*/*/
+
+  echo "Resolved PARQUET_DETAIL_DIR: $PARQUET_DETAIL_DIR"
+
+  STDERR_FILE="$HOME/OAR.LLM evaluation.${OARD_JOB_ID}.stderr"
+  STDOUT_FILE="$HOME/OAR.LLM evaluation.${OARD_JOB_ID}.stdout"
+
+  for FILE in "$STDERR_FILE" "$STDOUT_FILE"; do
+    if [ -f "$FILE" ]; then
+       cp "$FILE" "$PARQUET_DETAIL_DIR"
+    else
+      echo "Error: '$FILE' not found." >&2
+    fi
+  done
+
   export HF_USER_ACCESS_GIT=$(cat ~/.hf_push_user)
   export HF_TOKEN_ACCESS_GIT=$(cat ~/.hf_push_token)
   python3 push_results.py $DETAIL_DIR "details-dev"
