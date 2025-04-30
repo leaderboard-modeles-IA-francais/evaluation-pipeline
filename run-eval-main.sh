@@ -55,7 +55,7 @@ if [ -d "$OUTPUT_DIR/results" ]; then
   ## structure like details/provider/model/datetime/
   PARQUET_DETAIL_DIR=$DETAIL_DIR/*/*/
 
-  echo "Resolved PARQUET_DETAIL_DIR: $(realpath PARQUET_DETAIL_DIR)"
+  echo "Resolved PARQUET_DETAIL_DIR: $(realpath $PARQUET_DETAIL_DIR)"
 
   STDERR_FILE="$HOME/OAR.LLM evaluation.${OAR_JOB_ID}.stderr"
   STDOUT_FILE="$HOME/OAR.LLM evaluation.${OAR_JOB_ID}.stdout"
