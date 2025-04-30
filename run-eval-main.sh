@@ -53,7 +53,7 @@ if [ -d "$OUTPUT_DIR/results" ]; then
   ## add the log there.
   ## It makes the assumption that there is alway a subdirectory
   ## structure like details/provider/model/datetime/
-  PARQUET_DETAIL_DIR=$DETAIL_DIR/*/*/
+  PARQUET_DETAIL_DIR=$DETAIL_DIR/*/*/*/
 
   echo "Resolved PARQUET_DETAIL_DIR: $(realpath $PARQUET_DETAIL_DIR)"
 
