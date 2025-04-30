@@ -62,7 +62,7 @@ if [ -d "$OUTPUT_DIR/results" ]; then
 
   for FILE in "$STDERR_FILE" "$STDOUT_FILE"; do
     if [ -f "$FILE" ]; then
-       cp "$FILE" "$PARQUET_DETAIL_DIR"
+       cp "$FILE" $PARQUET_DETAIL_DIR
     else
       echo "Error: '$FILE' not found." >&2
     fi
