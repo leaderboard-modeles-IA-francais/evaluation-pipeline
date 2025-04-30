@@ -60,13 +60,7 @@ if [ -d "$OUTPUT_DIR/results" ]; then
   STDERR_FILE="$HOME/OAR.LLM evaluation.${OAR_JOB_ID}.stderr"
   STDOUT_FILE="$HOME/OAR.LLM evaluation.${OAR_JOB_ID}.stdout"
 
-  for FILE in "$STDERR_FILE" "$STDOUT_FILE"; do
-    if [ -f "$FILE" ]; then
-       cp "$FILE" $PARQUET_DETAIL_DIR
-    else
-      echo "Error: '$FILE' not found." >&2
-    fi
-  done
+  cp /tmp/.clearml_agent_out.* $PARQUET_DETAIL_DIR
 
   export HF_USER_ACCESS_GIT=$(cat ~/.hf_push_user)
   export HF_TOKEN_ACCESS_GIT=$(cat ~/.hf_push_token)
