@@ -103,15 +103,4 @@ for model in models:
         post_execute_callback=post_execute_callback
     )
 
-def gather_results():
-    return True
-
-pipe.add_function_step(
-    name='gather_results',
-    parents=eval_tasks,
-    function=gather_results,
-    function_return=[],
-    execution_queue='default',
-)
-
 pipe.start_locally()
