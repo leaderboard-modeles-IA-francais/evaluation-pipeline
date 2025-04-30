@@ -53,12 +53,12 @@ if [ -d "$OUTPUT_DIR/results" ]; then
   ## add the log there.
   ## It makes the assumption that there is alway a subdirectory
   ## structure like details/provider/model/datetime/
-  PARQUET_DETAIL_DIR="$DETAIL_DIR"/*/*/
+  PARQUET_DETAIL_DIR=$DETAIL_DIR/*/*/
 
-  echo "Resolved PARQUET_DETAIL_DIR: $PARQUET_DETAIL_DIR"
+  echo "Resolved PARQUET_DETAIL_DIR: $(realpath PARQUET_DETAIL_DIR)"
 
-  STDERR_FILE="$HOME/OAR.LLM evaluation.${OARD_JOB_ID}.stderr"
-  STDOUT_FILE="$HOME/OAR.LLM evaluation.${OARD_JOB_ID}.stdout"
+  STDERR_FILE="$HOME/OAR.LLM evaluation.${OAR_JOB_ID}.stderr"
+  STDOUT_FILE="$HOME/OAR.LLM evaluation.${OAR_JOB_ID}.stdout"
 
   for FILE in "$STDERR_FILE" "$STDOUT_FILE"; do
     if [ -f "$FILE" ]; then
