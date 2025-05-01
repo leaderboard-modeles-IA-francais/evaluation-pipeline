@@ -12,6 +12,28 @@ results = {}
 
 project_name = "LLM Leaderboard FR"
 
+model_too_large_list = ["allenai/Llama-3.1-Tulu-3-405B"]
+
+model_nb_nodes_map = {
+    "mistralai/Mistral-Large-Instruct-2411": 4,
+    "deepseek-ai/DeepSeek-R1-Distill-Llama-70B": 4,
+    "Qwen/Qwen2.5-Math-72B-Instruct": 4,
+    "microsoft/phi-4": 1,
+}
+
+model_gpu_memory_utilization_map = {
+    "mistralai/Mistral-Large-Instruct-2411": 0.8,
+}
+
+model_nb_gpus_per_node_map = {
+
+}
+
+model_walltime_map = {
+    "deepseek-ai/DeepSeek-R1-Distill-Llama-70B": "04:30",
+    "Qwen/Qwen2.5-Math-72B-Instruct": "14:00"
+}
+
 continuation_behaviour = {
     "continue_on_fail": True,
     "continue_on_abort": True,
@@ -52,7 +74,12 @@ eval_tasks = [ ]
 # Retrieve all models which need to be evaluated
 models = pull_requests.models()
 
+models = list(set(models))
+
 for model in models:
+    if model in model_too_large_list:
+        continue
+
     hf_token = os.environ.get("HF_TOKEN_ACCESS_MODELS")
     if not hf_token:
         print("Error: HF_TOKEN_ACCESS_MODELS must be set in the environment.")
@@ -77,8 +104,10 @@ for model in models:
         print("Failed to parse config.json")
         exit(1)
 
-    nb_nodes = 2
-    nb_gpus_per_node = 2
+    nb_nodes = model_nb_nodes_map.get(model, 2)
+    nb_gpus_per_node = model_nb_gpus_per_node_map.get(model, 2)
+    gpu_memory_utilization = model_gpu_memory_utilization_map.get(model, 0.5)
+    walltime = model_walltime_map.get(model, "02:00")
 
     task_name = f"eval_{model}"
     eval_tasks.append(task_name)
@@ -93,10 +122,11 @@ for model in models:
             'General/cluster': 'musa',
             'General/nb_nodes': nb_nodes,
             'General/nb_gpus_per_node': nb_gpus_per_node,
-            'General/gpu_memory_utilization': 0.5,
+            'General/gpu_memory_utilization': gpu_memory_utilization,
             'General/tasks': 'community|bac-fr|0|0,community|ifeval-fr|0|0,community|gpqa-fr|0|0',
             'General/max_model_length': None,
-            'General/use_chat_template': True
+            'General/use_chat_template': True,
+            'General/walltime': walltime
         },
         execution_queue='national_clusters',
         #pre_execute_callback=pre_execute_callback_example,
