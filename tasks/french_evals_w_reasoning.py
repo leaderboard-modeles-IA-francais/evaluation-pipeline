@@ -524,10 +524,10 @@ def prompt_kangourou_to(line, task_name: str = None):
 
 # BAC-fr prompt function
 def prompt_bac_fr(line, task_name: str = None):
-    prompt = "Répondre exactement à la question en suivant les instructions.\n\n"
+    instruction = "Répondre exactement à la question en suivant les instructions.\n\n"
     if line['instruction'] is not None:
-        prompt += f"Instruction: {line['instruction']}\n\n"
-    prompt += f"Question: {line['enonce']}\n"
+        instruction += f"Instruction: {line['instruction']}\n\n"
+    prompt = f"Question: {line['enonce']}\n"
     prompt += "Réponse: "
     if line["choix"] is not None:  # Multichoice evaluation
         return Doc(
@@ -535,17 +535,17 @@ def prompt_bac_fr(line, task_name: str = None):
             query=prompt,
             choices=as_list(line["choix"]),
             gold_index=as_list(line["choix"]).index(line["choix correct"]),
-            instruction="",
+            instruction=instruction,
         )
     else:
-        return Doc(task_name=task_name, query=prompt, choices=[line["reponse"]], gold_index=0, instruction="")
+        return Doc(task_name=task_name, query=prompt, choices=[line["reponse"]], gold_index=0, instruction=instruction)
 
 # pr-fouras prompt function
 def prompt_pr_fouras(line, task_name: str = None):
-    prompt = "Trouver la réponse exacte à l'énigme. Vous pouvez proposer plusieurs réponses possibles. Chaque réponse doit être séparée d'un caractère /.\n Exemple:\n Enigme: Plus je travaille, plus je raccourcis. Qui suis-je ?\nRéponses: Des ciseaux / Une paire de ciseaux / Une bougie / Une gomme / Une personne agée / Un vieux / Un vêtement / Un sécateur / Un clou / Une pause.\n\n"
-    prompt += f"Enigme: {line['enigme']}\n"
+    instruction = "Trouver la réponse exacte à l'énigme. Vous pouvez proposer plusieurs réponses possibles. Chaque réponse doit être séparée d'un caractère /.\n Exemple:\n Enigme: Plus je travaille, plus je raccourcis. Qui suis-je ?\nRéponses: Des ciseaux / Une paire de ciseaux / Une bougie / Une gomme / Une personne agée / Un vieux / Un vêtement / Un sécateur / Un clou / Une pause.\n\n"
+    prompt = f"Enigme: {line['enigme']}\n"
     prompt += "Réponses: "
-    return Doc(task_name=task_name, query=prompt, choices=[line["reponse"]], gold_index=0, instruction="")
+    return Doc(task_name=task_name, query=prompt, choices=[line["reponse"]], gold_index=0, instruction=instruction)
 
 
 

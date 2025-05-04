@@ -42,6 +42,7 @@ def main():
         launcher_type=ParallelismManager.VLLM,
         custom_tasks_directory=tasks_path,
         use_chat_template=parameters['use_chat_template'],
+        systemp_prompt="", # Defines a system_prompt so that instructions move to system chat when using chat templates
         #env_config=EnvConfig(cache_dir="tmp/"),
         # Remove the 2 parameters below once your configuration is tested
         #override_batch_size=1,
