@@ -475,7 +475,8 @@ def prompt_gpqa_fr(line, task_name: str = None):
     choices = [line["Réponse incorrecte 1"], line["Réponse incorrecte 2"], line["Réponse incorrecte 3"]]
     choices.insert(gold_index, line["Réponse correcte"])
     instruction = "Répondre à la question par A ou B ou C ou D.\n\n"
-    query = f"Question: {line['Question']}\n\n"
+    query = instruction
+    query += f"Question: {line['Question']}\n\n"
     query += "".join([f"{key}. {choice}\n" for key, choice in zip(LETTER_INDICES, choices)])
     query += "Réponse: "
     return Doc(
@@ -492,7 +493,8 @@ def prompt_sornette(line, task_name: str = None):
     random.shuffle(choices)
     gold_index = choices.index(line["gold"])
     instruction = "Répondre à la question par A ou B ou C ou D.\n\n"
-    query = f"Texte: {line['text']}\n\n"
+    query = instruction
+    query += f"Texte: {line['text']}\n\n"
     query += "Question: Le texte est-il:\n"
     query += "".join([f"{key}. {choice}\n" for key, choice in zip(LETTER_INDICES, choices)])
     query += "Réponse: "
@@ -510,7 +512,8 @@ def prompt_kangourou_to(line, task_name: str = None):
     random.shuffle(choices)
     gold_index = choices.index(line["gold"])
     instruction = "Répondre à la question par A ou B ou C ou D ou E.\n\n"
-    query = f"Question: {line['question']}\n\n"
+    query = instruction
+    query += f"Question: {line['question']}\n\n"
     query += "".join([f"{key}. {choice}\n" for key, choice in zip(LETTER_INDICES, choices)])
     query += "Réponse: "
     return Doc(
@@ -527,7 +530,8 @@ def prompt_bac_fr(line, task_name: str = None):
     instruction = "Répondre exactement à la question en suivant les instructions.\n\n"
     if line['instruction'] is not None:
         instruction += f"Instruction: {line['instruction']}\n\n"
-    prompt = f"Question: {line['enonce']}\n"
+    prompt = instruction
+    prompt += f"Question: {line['enonce']}\n"
     prompt += "Réponse: "
     if line["choix"] is not None:  # Multichoice evaluation
         return Doc(
@@ -543,7 +547,8 @@ def prompt_bac_fr(line, task_name: str = None):
 # pr-fouras prompt function
 def prompt_pr_fouras(line, task_name: str = None):
     instruction = "Trouver la réponse exacte à l'énigme. Vous pouvez proposer plusieurs réponses possibles. Chaque réponse doit être séparée d'un caractère /.\n Exemple:\n Enigme: Plus je travaille, plus je raccourcis. Qui suis-je ?\nRéponses: Des ciseaux / Une paire de ciseaux / Une bougie / Une gomme / Une personne agée / Un vieux / Un vêtement / Un sécateur / Un clou / Une pause.\n\n"
-    prompt = f"Enigme: {line['enigme']}\n"
+    prompt = instructino
+    prompt += f"Enigme: {line['enigme']}\n"
     prompt += "Réponses: "
     return Doc(task_name=task_name, query=prompt, choices=[line["reponse"]], gold_index=0, instruction=instruction)
 
