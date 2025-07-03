@@ -42,8 +42,8 @@ def filter_pending(json_data):
 
     for item in json_data.items():
         try:
-            if item[1].get('status') == 'PENDING':
-                pending_list.append(item)
+            #if item[1].get('status') == 'PENDING':
+            pending_list.append(item)
         except Exception as e:
             print(f"Error checking status for {filename}: {e}")
 

@@ -42,8 +42,8 @@ model_walltime_map = {
     "EpistemeAI/ReasoningCore-Llama-3.2-3B-R01-1.1": "06:00",
     "speakleash/Bielik-11B-v2.3-Instruct": "05:00",
     "HoangHa/Pensez-v0.1-e5": "03:00",
-    "MaziyarPanahi/calme-3.2-instruct-78b": "03:00"
-    "arcee-ai/Virtuoso-Medium-v2": "12:00"
+    "MaziyarPanahi/calme-3.2-instruct-78b": "03:00",
+    "arcee-ai/Virtuoso-Medium-v2": "12:00",
     "HoangHa/Pensez-Llama3.1-8B": "03:00",
     "deepseek-ai/DeepSeek-R1-Distill-Qwen-32B": "03:00",
     "baconnier/Napoleon_24B_V0.1": "08:00",
