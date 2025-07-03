@@ -4,6 +4,6 @@ langdetect==1.0.9
 triton==3.2.0
 clearml==1.18.0
 datasets==2.19.1
-lighteval[vllm,math] @ git+https://github.com/leaderboard-modeles-IA-francais/lighteval@ca2cd84244c067c95f0ce84a590c0a2bd9d96bda
+lighteval[vllm,math] @ git+https://github.com/leaderboard-modeles-IA-francais/lighteval@2b246358fa93ef1f02c3d9e93e
 torch==2.6.0
 clearml-agent==1.9.3

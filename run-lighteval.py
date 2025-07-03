@@ -5,6 +5,14 @@ from lighteval.logging.evaluation_tracker import EvaluationTracker
 from lighteval.models.vllm.vllm_model import VLLMModelConfig
 from lighteval.pipeline import ParallelismManager, Pipeline, PipelineParameters
 from lighteval.utils.utils import EnvConfig
+from transformers import AutoTokenizer
+
+def has_chat_template(model):
+    try:
+        tokenizer = AutoTokenizer.from_pretrained(model)
+        return getattr(tokenizer, "chat_template", None) is not None
+    except Exception:
+        return False
 
 def main():
     unix_user=os.environ.get("USER")
@@ -31,6 +39,8 @@ def main():
     }
 
     task.connect(parameters)
+    use_chat_template = has_chat_template(parameters['model'])
+    task.set_parameter("use_chat_template", use_chat_template)
 
     evaluation_tracker = EvaluationTracker(
         output_dir=output_dir,
@@ -55,7 +65,7 @@ def main():
         tensor_parallel_size=parameters['nb_nodes'] * parameters['nb_gpus_per_node'],
         enforce_eager=parameters['enforce_eager'],
         max_model_length=parameters['max_model_length'],
-        use_chat_template=parameters['use_chat_template'],
+        use_chat_template=use_chat_template,
     )
 
     pipeline = Pipeline(
