@@ -40,6 +40,7 @@ def main():
 
     task.connect(parameters)
     use_chat_template = has_chat_template(parameters['model'])
+    print(f"Model has chat_template? {use_chat_template}")
     task.set_parameter("use_chat_template", use_chat_template)
 
     evaluation_tracker = EvaluationTracker(
