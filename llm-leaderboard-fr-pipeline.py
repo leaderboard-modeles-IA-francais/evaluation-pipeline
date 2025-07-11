@@ -55,6 +55,7 @@ eval_tasks = [ ]
 
 # Retrieve all models which need to be evaluated
 models = git_requests.pending_models()
+models = list(set(models))
 models = git_results.filter_model_with_results(models, "results-dev")
 
 for model in models:
