@@ -67,9 +67,3 @@ def filter_model_with_results(models, results_repo):
         if not os.path.exists(os.path.join(results_repo, model, "results")):
             filtered_models.append(model)
     return filtered_models
-
-if __name__ == "__main__":
-    results = sys.argv[1]
-    results_repo = sys.argv[2]
-    print(f"Trying to push {results} results to {results_repo}")
-    push(results, results_repo) 
