@@ -4,9 +4,9 @@ import os, sys
 import math
 import subprocess
 import requests
-
-import pull_requests
-import push_results
+import json
+import git_requests
+import git_results
 
 results = {}
 
@@ -88,7 +88,7 @@ pipe = PipelineController(
 eval_tasks = [ ]
 
 # Retrieve all models which need to be evaluated
-models = pull_requests.models()
+models = git_requests.pending_models()
 
 models = list(set(models))
 

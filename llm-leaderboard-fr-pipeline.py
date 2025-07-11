@@ -1,12 +1,13 @@
 from clearml import PipelineController, Task
 
 import os
+import sys
 import math
 import subprocess
 import requests
-
-import pull_requests
-import push_results
+import json
+import git_requests
+import git_results
 
 results = {}
 
@@ -53,7 +54,8 @@ pipe.add_parameter(
 eval_tasks = [ ]
 
 # Retrieve all models which need to be evaluated
-models = pull_requests.models()
+models = git_requests.pending_models()
+models = git_results.filter_model_with_results(models, "results-dev")
 
 for model in models:
     hf_token = os.environ.get("HF_TOKEN_ACCESS_MODELS")

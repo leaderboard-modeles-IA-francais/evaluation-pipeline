@@ -1,23 +1,7 @@
 import os, sys, requests, json
 from subprocess import run, CalledProcessError
 from datetime import datetime
-
-def git_clone_or_pull(repo_url, folder):
-    if not os.path.isdir(folder):
-        try:
-            # Run git clone command
-            run(["git", "clone", repo_url, folder], check=True)
-            print(f"Repository cloned successfully to {folder}")
-        except subprocess.CalledProcessError as e:
-            print(f"Error cloning repository: {e}")
-    else :
-        try:
-            run(["git", "-C", folder, "pull"], check=True)
-            print(f"Repository pulled successfully")
-        except subprocess.CalledProcessError as e:
-            print(f"Error pulling repository: {e}")
-
-
+from git_utils import git_clone_or_pull, git_commit_push
 
 def parse_json_files(directory):
     """Parse all JSON files in the given directory (including subdirectories)"""
@@ -42,10 +26,10 @@ def filter_pending(json_data):
 
     for item in json_data.items():
         try:
-            if item[1].get('status') == 'PENDING':
-                pending_list.append(item)
+#            if item[1].get('status') == 'PENDING':
+            pending_list.append(item)
         except Exception as e:
-            print(f"Error checking status for {filename}: {e}")
+            print(f"Error checking status for {item[0]}: {e}")
 
     return pending_list
 
@@ -90,28 +74,7 @@ def write_updated_json(file_path, data):
     except Exception as e:
         print(f"Error updating {file_path}: {e}")
 
-def git_commit_push(modified_file):
-    """Commit and push changes to Git repository"""
-    try:
-        # Add only the modified files
-        run(["git", "add", modified_file], check=True)
-
-        # Get current timestamp for commit message
-        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        commit_message = f"Update status to EVALUATING ({timestamp})"
-
-        # Commit changes
-        run(["git", "commit", "-m", commit_message], check=True)
-
-        # Push changes
-        run(["git", "push"], check=True)
-        print("Changes committed and pushed successfully")
-    except CalledProcessError as e:
-        print(f"Git operation failed: {e}")
-    except Exception as e:
-        print(f"An error occurred during Git operations: {e}")
-
-def models():
+def pending_models():
     # Define environment variables
     hf_user = os.environ.get("HF_USER_ACCESS_GIT")
     hf_token = os.environ.get("HF_TOKEN_ACCESS_GIT")
@@ -160,4 +123,4 @@ def models():
     for item in reordered_pending:
         models.append(item[1]["model"])
 
-    return models
+    return models 
