@@ -16,7 +16,7 @@ def has_chat_template(model):
 
 def main():
     unix_user=os.environ.get("USER")
-    output_dir=f"/tmp/{unix_user}-runtime-dir/results"
+    output_dir=os.environ.get("RESULTS_DIR")
     #tasks_path=Path(f"tasks/french_evals.py")
     tasks_path=Path(f"tasks/french_evals_w_reasoning.py")
 
