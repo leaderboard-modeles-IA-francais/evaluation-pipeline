@@ -121,6 +121,8 @@ def pending_models():
 
     models = []
     for item in reordered_pending:
-        models.append(item[1]["model"])
-
+        try:
+            models.append(item[1]["model"])
+        except KeyError:
+            print(f"Warning: 'model' key missing in {item[0]}")
     return models 
