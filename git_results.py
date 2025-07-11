@@ -64,7 +64,7 @@ def filter_model_with_results(models, results_repo):
 
     filtered_models = []
     for model in models:
-        result_path = os.path.join(results_repo, model, "results")
+        result_path = os.path.join(results_repo, "clearML-sprint1-wr/", model)
         print(f"Checking model '{model}': looking for results at '{result_path}'")
         if not os.path.exists(result_path):
             print(f"No results found for model '{model}'. Adding to filtered list.")
