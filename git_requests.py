@@ -87,11 +87,8 @@ def pending_models():
     repo_url = f"https://{hf_user}:{hf_token}@huggingface.co/datasets/fr-gouv-coordination-ia/requests-dev"
 
     git_clone_or_pull(repo_url, "requests")
-
-    directory_path = "./requests"
-
-    os.chdir(directory_path)
-    json_data = parse_json_files(os.getcwd())
+    requests_dir = os.path.abspath("requests")
+    json_data = parse_json_files(requests_dir)
 
     print("\nOriginal List:")
     for item in json_data:
