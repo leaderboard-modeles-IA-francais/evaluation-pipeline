@@ -64,6 +64,12 @@ def filter_model_with_results(models, results_repo):
 
     filtered_models = []
     for model in models:
-        if not os.path.exists(os.path.join(results_repo, model, "results")):
+        result_path = os.path.join(results_repo, model, "results")
+        print(f"Checking model '{model}': looking for results at '{result_path}'")
+        if not os.path.exists(result_path):
+            print(f"No results found for model '{model}'. Adding to filtered list.")
             filtered_models.append(model)
+        else:
+            print(f"Results already exist for model '{model}'. Skipping.")
+    print(f"Filtered models (no results yet): {filtered_models}")
     return filtered_models
