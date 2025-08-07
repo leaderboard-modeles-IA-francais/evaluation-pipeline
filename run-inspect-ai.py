@@ -76,13 +76,24 @@ def main():
         return
     
     # Create model configuration for inspect_ai
-    # Map vLLM parameters to inspect_ai model specification
+    # Note: inspect_ai uses different model backends than vLLM
+    # We'll use the model name directly and let inspect_ai handle the backend
     model_name = parameters['model']
     
-    # Create inspect_ai model
-    # Note: We'll use a simple model specification - advanced vLLM features
-    # would need more complex integration
-    model = get_model(f"openai/{model_name}")
+    # For inspect_ai, we can use different model providers
+    # Common options: "openai/model", "anthropic/model", "local/model"
+    # For now, we'll use a generic approach that works with transformers
+    try:
+        # Try using transformers backend for local models
+        model = get_model(f"hf/{model_name}")
+    except:
+        try:
+            # Fallback to generic model specification
+            model = get_model(model_name)
+        except Exception as e:
+            print(f"Warning: Could not create model {model_name}: {e}")
+            print("Using mock model for testing")
+            model = None
     
     # Ensure output directory exists
     os.makedirs(output_dir, exist_ok=True)
@@ -100,6 +111,12 @@ def main():
             # Create the task
             task_obj = task_fn()
             
+            # Skip evaluation if model is None (for testing)
+            if model is None:
+                print(f"Skipping {task_name} - no model available")
+                results[task_name] = {"error": "No model available"}
+                continue
+            
             # Run evaluation
             eval_result = eval(
                 task_obj,
@@ -107,17 +124,35 @@ def main():
                 log_dir=output_dir
             )
             
-            # Extract results
+            # Extract results - handle different result formats
+            if hasattr(eval_result, 'results'):
+                if hasattr(eval_result.results, 'scores'):
+                    scores = eval_result.results.scores
+                else:
+                    scores = {}
+                
+                if hasattr(eval_result.results, 'metrics'):
+                    metrics = eval_result.results.metrics
+                else:
+                    metrics = {}
+            else:
+                # Fallback for different result formats
+                scores = {}
+                metrics = getattr(eval_result, 'metrics', {})
+            
             results[task_name] = {
-                "scores": eval_result.results.scores,
-                "metrics": eval_result.results.metrics
+                "scores": scores,
+                "metrics": metrics,
+                "status": "completed"
             }
             
             print(f"Task {task_name} completed successfully")
             
         except Exception as e:
             print(f"Error running task {task_name}: {e}")
-            results[task_name] = {"error": str(e)}
+            import traceback
+            traceback.print_exc()
+            results[task_name] = {"error": str(e), "status": "failed"}
     
     # Save consolidated results
     results_file = Path(output_dir) / "inspect_ai_results.json"
