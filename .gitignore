@@ -1,0 +1,51 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+ENV/
+env/
+
+# Temporary files
+/tmp/
+.tmp/
+*.tmp
+
+# Evaluation results and cache
+/results/
+/cache/
+.clearml/
+.vllm/
+
+# HuggingFace cache
+.cache/
+.huggingface/
+
+# Ray
+/tmp/ray/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+*.out
+*.err
+
+# Container images
+*.sif
+*.img
+
+# Authentication tokens (should never be committed)
+.hf_token
+.hf_push_*
+*.token
