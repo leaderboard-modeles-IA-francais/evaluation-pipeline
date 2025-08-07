@@ -23,6 +23,10 @@ NNODES=${#NODES[@]}
 echo "Number of nodes: $(($NNODES+1))"
 echo "Current node: ${HOSTNAME}"
 
+# Check if framework parameter is set, default to lighteval
+FRAMEWORK=${FRAMEWORK:-lighteval}
+echo "Framework selected: $FRAMEWORK"
+
 if (($NNODES>0)); then
    if (($NNODES>2)); then
       export RAY_CGRAPH_submit_timeout=100
@@ -33,7 +37,7 @@ if (($NNODES>0)); then
    for ((i=0; i<${NNODES}; i++));
    do
 	   echo "Other nodes: Index $i - Node ${NODES[i]}"
-	   ssh ${NODES[i]} "bash -s" < run-eval-workers.sh $(hostname -I | cut -d " " -f1)
+	   ssh ${NODES[i]} "bash -s" < run-eval-workers.sh $(hostname -I | cut -d " " -f1) $FRAMEWORK
    done
    ray status
 fi
@@ -44,7 +48,13 @@ pip list
 #NGPUSPERNODES=$(nvidia-smi --query-gpu=name --format=csv,noheader | wc -l)
 #NGPUS=$(($NGPUSPERNODES*($NNODES+1)))
 
-python3 run-lighteval.py
+if [ "$FRAMEWORK" = "inspect_ai" ]; then
+    echo "Using inspect_ai framework"
+    python3 run-inspect-ai.py
+else
+    echo "Using lighteval framework"  
+    python3 run-lighteval.py
+fi
 if [ -d "$OUTPUT_DIR/results" ]; then
   mv $OUTPUT_DIR/results $RESULT_DIR
 

@@ -1,0 +1,17 @@
+BootStrap: docker
+From: python:3.12-slim
+
+%help
+    Container for inspect_ai evaluation framework for llm_benchmark_fr
+
+%post
+    apt-get update \
+    && apt-get install -y --no-install-recommends git ssh gcc g++ wget git-lfs\
+    && apt-get purge -y --auto-remove \
+    && rm -rf /var/lib/apt/lists/*
+    pip install --upgrade pip
+    pip install -r requirements_inspect.txt
+    pip install -U "huggingface_hub[cli]"
+
+%files
+    requirements_inspect.txt
