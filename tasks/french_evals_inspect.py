@@ -1,84 +1,49 @@
-# MIT License
-
-# Copyright (c) 2024 The HuggingFace Team
-
-# Permission is hereby granted, free of charge, to any person obtaining a copy
-# of this software and associated documentation files (the "Software"), to deal
-# in the Software without restriction, including without limitation the rights
-# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-# copies of the Software, and to permit persons to whom the Software is
-# furnished to do so, subject to the following conditions:
-
-# The above copyright notice and this permission notice shall be included in all
-# copies or substantial portions of the Software.
-
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-# SOFTWARE.
-
 """
-Custom evaluation tasks for inspect_ai.
+French evaluation tasks for inspect_ai
 
-This file implements the French evaluation tasks using the inspect_ai framework,
-equivalent to the lighteval tasks defined in french_evals.py.
+This module defines inspect_ai implementations of French language benchmarks
+for LLM evaluation, providing an alternative to the lighteval framework.
 
-See: https://huggingface.co/fr-gouv-coordination-ia
+Tasks implemented using patterns from clebreto/inspect_evals fork:
+- ifeval_fr: French instruction following evaluation  
+- gpqa_fr: French graduate-level science questions
+- bac_fr: French Baccalauréat questions (with custom math scorer)
+- pr_fouras: Père Fouras riddles (with multi-response scorer)
+- sornette: Text classification
+- kangourou_to: Mathematical reasoning
+
+Usage:
+    inspect eval tasks.french_evals_inspect:ifeval_fr
+    inspect eval tasks.french_evals_inspect:gpqa_fr
 """
 
-import os
-import random
 import re
 import string
-from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
-try:
-    from inspect_ai import Task, eval, task
-    from inspect_ai.dataset import Dataset, Sample
-    from inspect_ai.model import ChatMessageUser, GenerateConfig
-    from inspect_ai.scorer import (
-        Scorer, 
-        Score, 
-        Target, 
-        accuracy, 
-        scorer, 
-        mean
-    )
-    from inspect_ai.solver import (
-        chain_of_thought,
-        generate, 
-        multiple_choice,
-        Solver
-    )
-    INSPECT_AI_AVAILABLE = True
-except ImportError:
-    print("Warning: inspect_ai not available. Install with: pip install inspect_ai")
-    INSPECT_AI_AVAILABLE = False
-    # Define dummy classes for compatibility
-    class Task: pass
-    class Dataset: pass
-    class Sample: pass
-    def task(fn): return fn
-    def scorer(*args, **kwargs): return lambda fn: fn
-
-try:
-    from datasets import load_dataset
-    DATASETS_AVAILABLE = True
-except ImportError:
-    print("Warning: datasets not available. Install with: pip install datasets")
-    DATASETS_AVAILABLE = False
-    def load_dataset(*args, **kwargs): 
-        raise ImportError("datasets package not installed")
+import numpy as np
+from inspect_ai import Task, task
+from inspect_ai.dataset import Sample, hf_dataset
+from inspect_ai.model import GenerateConfig
+from inspect_ai.scorer import (
+    Metric,
+    SampleScore,
+    Score,
+    Scorer,
+    Target,
+    Value,
+    choice,
+    metric,
+    scorer,
+)
+from inspect_ai.solver import TaskState, generate, multiple_choice
 
 
-# Normalization functions (ported from lighteval version)
+# French-specific normalization functions
+
 def helm_normalizer_fr(text: str) -> str:
     """Lower text and remove punctuation, articles and extra whitespace.
-    Adapted for pr_fouras dataset"""
+    Adapted for French text processing."""
 
     def remove_articles(text: str) -> str:
         return re.sub(r"\b(le |la |les |l |un |une |des )", "", text)
@@ -115,7 +80,7 @@ def helm_normalizer_fr(text: str) -> str:
 
 
 def math_normalizer(text: str) -> str:
-    """Custom normalizer for bac-fr dataset"""
+    """Custom normalizer for mathematical text (bac-fr, kangourou-to)"""
 
     def space_digit(text: str) -> str:
         return re.sub(r"(\d+[.]*\d*)", r" \1 ", text)
@@ -159,300 +124,396 @@ def math_normalizer(text: str) -> str:
     return "".join([t for t in tokens if t != ""]).strip()
 
 
-# Custom scorers
-if INSPECT_AI_AVAILABLE:
-    @scorer(metrics=[mean()])
-    def bac_prefix_suffix_match() -> Scorer:
-        """Custom scorer for BAC-fr that allows prefix, suffix, or exact match"""
+# Custom metrics and scorers
+
+@metric
+def french_accuracy() -> Metric:
+    """French-aware accuracy metric"""
+    def metric(scores: list[SampleScore]) -> Value:
+        correct = sum(1 for score in scores if score.score.value == 1)
+        return correct / len(scores) if scores else 0.0
+    return metric
+
+
+@scorer(metrics=[french_accuracy()])
+def math_prefix_suffix_match() -> Scorer:
+    """Custom scorer for mathematical tasks that allows prefix, suffix, or exact match"""
+    
+    async def score(state: TaskState, target: Target) -> Score:
+        if not state.output.completion:
+            return Score(value=0, answer="")
         
-        def score(state, target: Target):
-            if not state.output.completion:
-                return Score(value=0.0)
-            
-            pred = math_normalizer(state.output.completion.strip())
-            gold = math_normalizer(target.text.strip())
-            
+        pred = math_normalizer(state.output.completion.strip())
+        gold = math_normalizer(target.text.strip())
+        
+        if pred.startswith(gold) or pred.endswith(gold) or gold == pred:
+            return Score(value=1, answer=state.output.completion)
+        
+        # Last chance with split on '='
+        gold_lc = gold.split('=')[-1] if '=' in gold else gold
+        pred_lc = pred.split('=')[-1] if '=' in pred else pred
+        if pred_lc.startswith(gold_lc) or pred_lc.endswith(gold_lc) or gold_lc == pred_lc:
+            return Score(value=1, answer=state.output.completion)
+        
+        return Score(value=0, answer=state.output.completion)
+    
+    return score
+
+
+@scorer(metrics=[french_accuracy()])
+def multi_response_match() -> Scorer:
+    """Custom scorer for pr-fouras that handles multiple responses separated by /"""
+    
+    async def score(state: TaskState, target: Target) -> Score:
+        if not state.output.completion:
+            return Score(value=0, answer="")
+        
+        # Split multi-responses
+        predictions = state.output.completion.split('/')
+        
+        gold = helm_normalizer_fr(target.text.strip())
+        
+        for pred in predictions:
+            pred = helm_normalizer_fr(pred.strip())
             if pred.startswith(gold) or pred.endswith(gold) or gold == pred:
-                return Score(value=1.0)
-            
-            # Last chance with split on '='
-            gold_lc = gold.split('=')[-1]
-            pred_lc = pred.split('=')[-1]
-            if pred_lc.startswith(gold_lc) or pred_lc.endswith(gold_lc) or gold_lc == pred_lc:
-                return Score(value=1.0)
-            
-            return Score(value=0.0)
+                return Score(value=1, answer=state.output.completion)
         
-        return score
-
-
-    @scorer(metrics=[mean()])
-    def pr_fouras_prefix_suffix_match() -> Scorer:
-        """Custom scorer for pr-fouras that handles multiple responses separated by /"""
-        
-        def score(state, target: Target):
-            if not state.output.completion:
-                return Score(value=0.0)
-            
-            # Split multi-responses
-            predictions = state.output.completion.split('/')
-            
-            gold = helm_normalizer_fr(target.text.strip())
-            
-            for pred in predictions:
-                pred = helm_normalizer_fr(pred.strip())
-                if pred.startswith(gold) or pred.endswith(gold) or gold == pred:
-                    return Score(value=1.0)
-            
-            return Score(value=0.0)
-        
-        return score
-else:
-    def bac_prefix_suffix_match(): 
-        return None
-    def pr_fouras_prefix_suffix_match(): 
-        return None
-
-
-# Dataset loading functions
-def load_hf_dataset(repo_name: str, subset: str = "default") -> Dataset:
-    """Load a Hugging Face dataset and convert to inspect_ai format"""
-    dsdir = Path(os.getenv("DATASETS_DIRECTORY", "fr-gouv-coordination-ia"))
-    hf_dataset = load_dataset(str(dsdir / repo_name), subset, split="train")
+        return Score(value=0, answer=state.output.completion)
     
-    samples = []
-    for item in hf_dataset:
-        # Convert to inspect_ai Sample format
-        # This will be customized per task type
-        sample = Sample(
-            input=str(item),  # Placeholder - will be overridden by task-specific functions
-            target=""  # Placeholder - will be overridden by task-specific functions
+    return score
+
+
+@scorer(metrics=[french_accuracy()])
+def french_exact_match() -> Scorer:
+    """French-aware exact match scorer"""
+    async def score(state: TaskState, target: Target) -> Score:
+        answer = state.output.completion.strip()
+        expected = target.text
+        
+        # Normalize both texts using helm_normalizer_fr
+        norm_answer = helm_normalizer_fr(answer)
+        norm_expected = helm_normalizer_fr(expected)
+        
+        return Score(
+            value=1 if norm_answer == norm_expected else 0,
+            answer=answer
         )
-        samples.append(sample)
-    
-    return Dataset(samples)
+    return score
 
 
-# Task definitions
-@task
-def ifeval_fr():
-    """IFEval-fr task - Instruction following evaluation in French"""
-    
-    def create_samples():
-        dsdir = Path(os.getenv("DATASETS_DIRECTORY", "fr-gouv-coordination-ia"))
-        hf_dataset = load_dataset(str(dsdir / "IFEval-fr"), "default", split="train")
-        
-        samples = []
-        for item in hf_dataset:
-            sample = Sample(
-                input=item["prompt"],
-                target="",  # IFEval uses custom evaluation
-                metadata={
-                    "instructions_id_list": item["instruction_id_list"],
-                    "kwargs": item["kwargs"]
-                }
+# IFEval-specific implementation (from clebreto fork)
+
+@metric
+def if_metric() -> Metric:
+    def _final_accuracy_stderr(
+        scores: list[SampleScore], mean_final_accuracy: float
+    ) -> float:
+        total_num_instructions = int(
+            sum(
+                cast(dict[str, Any], score.score.value)["num_instructions"]
+                for score in scores
             )
-            samples.append(sample)
-        
-        return Dataset(samples)
-    
-    return Task(
-        dataset=create_samples(),
-        solver=generate(),
-        scorer=accuracy(),  # TODO: Implement IFEval-specific scorer
-        config=GenerateConfig(max_tokens=2048)
-    )
+        )
+        mean_num_instructions = total_num_instructions / len(scores)
+        variance = 0.0
+        cluster_count = len(scores)
+        for score in scores:
+            value = cast(dict[str, Any], score.score.value)
+            inst_level_strict = int(value["inst_level_strict"])
+            inst_level_loose = int(value["inst_level_loose"])
+            prompt_level_strict = int(value["prompt_level_strict"])
+            prompt_level_loose = int(value["prompt_level_loose"])
+            num_instructions = int(value["num_instructions"])
 
-
-@task
-def gpqa_fr():
-    """GPQA-fr task - Graduate-level physics, chemistry, and biology questions in French"""
-    
-    def create_samples():
-        dsdir = Path(os.getenv("DATASETS_DIRECTORY", "fr-gouv-coordination-ia"))
-        hf_dataset = load_dataset(str(dsdir / "gpqa-fr"), "default", split="train")
-        
-        samples = []
-        for item in hf_dataset:
-            # Randomize answer choices
-            choices = [
-                item["Réponse incorrecte 1"], 
-                item["Réponse incorrecte 2"], 
-                item["Réponse incorrecte 3"]
+            loose_only = inst_level_loose - inst_level_strict
+            num_incorrect = int(num_instructions - inst_level_loose)
+            prompt_adjustment = (
+                0.25
+                * (prompt_level_strict + prompt_level_loose)
+                * mean_num_instructions
+                / num_instructions
+            )
+            vector = [
+                (0.5 + prompt_adjustment - mean_final_accuracy) * inst_level_strict,
+                (0.25 + prompt_adjustment - mean_final_accuracy) * loose_only,
+                (0.0 + prompt_adjustment - mean_final_accuracy) * num_incorrect,
             ]
-            correct_idx = random.randint(0, 3)
-            choices.insert(correct_idx, item["Réponse correcte"])
-            
-            prompt = f"Question: {item['Question']}\n\n"
-            prompt += "\n".join([f"{chr(65+i)}. {choice}" for i, choice in enumerate(choices)])
-            prompt += "\nRéponse: "
-            
-            sample = Sample(
-                input=prompt,
-                target=chr(65 + correct_idx),
-                choices=choices
+            variance += np.outer(vector, vector).sum()
+
+        stderr = (
+            np.sqrt(variance * cluster_count / (cluster_count - 1))
+            / total_num_instructions
+            if cluster_count > 1
+            else 0.0
+        )
+
+        return stderr
+
+    def metric(scores: list[SampleScore]) -> Value:
+        statistics: list[float] = []
+        prompt_keys = ["prompt_level_strict", "prompt_level_loose"]
+        instruct_keys = ["inst_level_strict", "inst_level_loose"]
+        final_keys = [
+            "prompt_strict_acc",
+            "prompt_strict_stderr",
+            "prompt_loose_acc",
+            "prompt_loose_stderr",
+            "inst_strict_acc",
+            "inst_strict_stderr",
+            "inst_loose_acc",
+            "inst_loose_stderr",
+            "final_acc",
+            "final_stderr",
+        ]
+
+        # calculate prompt-level accuracies + stderrs
+        for key in prompt_keys:
+            score_lst = [
+                cast(dict[str, Any], score.score.value)[key] for score in scores
+            ]
+            statistics.append(np.mean(score_lst).item())
+            stderr = (
+                np.std(score_lst, ddof=1).item() / np.sqrt(len(score_lst))
+                if len(score_lst) > 1
+                else 0.0
             )
-            samples.append(sample)
-        
-        return Dataset(samples)
-    
+            statistics.append(stderr)
+
+        # calculate instruction-level accuracies + clustered stderrs
+        for key in instruct_keys:
+            flattened = []
+            for score in scores:
+                value = cast(dict[str, Any], score.score.value)
+                num_correct = int(value[key])
+                num_incorrect = int(value["num_instructions"] - value[key])
+                flattened.extend([True] * num_correct + [False] * num_incorrect)
+
+            mean = np.mean(flattened).item()
+            statistics.append(mean)
+
+            # Because the inclusion of instructions are correlated, we need to cluster
+            # the standard errors by prompt. The clustered calculation follows the logic
+            # in the main stderr(cluster="cluster") code found in inspect_ai.scorer.
+            variance = 0.0
+            cluster_count = len(scores)
+            for score in scores:
+                value = cast(dict[str, Any], score.score.value)
+                num_correct = int(value[key])
+                num_incorrect = int(value["num_instructions"] - value[key])
+                vector = [num_correct * (1 - mean), num_incorrect * (0 - mean)]
+                variance += np.outer(vector, vector).sum()
+
+            stderr = (
+                np.sqrt(variance * cluster_count / (cluster_count - 1)) / len(flattened)
+                if cluster_count > 1
+                else 0.0
+            )
+            statistics.append(stderr)
+
+        # Calculate the final accuracy and its standard error
+        statistics.append(
+            np.mean([statistics[i] for i in range(0, len(statistics), 2)]).item()
+        )
+        statistics.append(_final_accuracy_stderr(scores, statistics[-1]))
+
+        return {k: v for k, v in zip(final_keys, statistics, strict=True)}
+
+    return metric
+
+
+@scorer(metrics=[if_metric()])
+def instruction_following() -> Scorer:
+    from instruction_following_eval.evaluation import (  # type: ignore
+        InputExample,
+        ensure_nltk_resource,
+        test_instruction_following,
+    )
+
+    ensure_nltk_resource()  # Required before calling test_instruction_following
+
+    async def score(state: TaskState, target: Target) -> Score:
+        # construct the input to IFEval's evaluation functions using the data class
+        eval_input = InputExample(
+            key=state.sample_id,
+            instruction_id_list=state.metadata["instruction_id_list"],
+            prompt=state.metadata["prompt"],
+            kwargs=state.metadata["kwargs"],
+        )
+
+        # retrieve evaluated outputs
+        out_strict = test_instruction_following(
+            eval_input, state.output.completion, strict=True
+        )
+        out_loose = test_instruction_following(
+            eval_input, state.output.completion, strict=False
+        )
+        ret_value = {
+            "prompt_level_strict": out_strict.follow_all_instructions,
+            "inst_level_strict": sum(out_strict.follow_instruction_list),
+            "prompt_level_loose": out_loose.follow_all_instructions,
+            "inst_level_loose": sum(out_loose.follow_instruction_list),
+            "num_instructions": len(out_loose.follow_instruction_list),
+        }
+
+        # return score with resulting outputs, model answer, and the
+        # expected instructions
+        return Score(
+            value=ret_value,
+            answer=state.output.completion,
+            explanation=" ".join(state.metadata["instruction_id_list"]),
+        )
+
+    return score
+
+
+# Task implementations
+
+@task
+def ifeval_fr() -> Task:
+    """French instruction following evaluation"""
     return Task(
-        dataset=create_samples(),
-        solver=multiple_choice(),
-        scorer=accuracy(),
-        config=GenerateConfig(max_tokens=1)
+        dataset=hf_dataset(
+            path="fr-gouv-coordination-ia/IFEval-fr",
+            split="train",
+            sample_fields=ifeval_record_to_sample
+        ),
+        solver=[generate()],
+        scorer=instruction_following(),
+    )
+
+
+def ifeval_record_to_sample(record: dict[str, Any]) -> Sample:
+    new_kwargs = {}
+    for index in range(len(record["instruction_id_list"])):
+        # remove None values from kwargs to avoid unexpected keyword argument errors
+        # in build_description method from the IFEval package.
+        kwargs = {k: v for k, v in record["kwargs"][index].items() if v}
+        new_kwargs[index] = kwargs
+
+    return Sample(
+        id=record["key"],
+        input=record["prompt"],
+        metadata={
+            "prompt": record["prompt"],
+            "instruction_id_list": record["instruction_id_list"],
+            "kwargs": new_kwargs,
+        },
+    )
+
+
+@task  
+def gpqa_fr() -> Task:
+    """French graduate-level science questions"""
+    return Task(
+        dataset=hf_dataset(
+            path="fr-gouv-coordination-ia/gpqa-fr",
+            split="train", 
+            sample_fields=gpqa_record_to_sample
+        ),
+        solver=[multiple_choice(shuffle=True)],
+        scorer=choice(),
+        config=GenerateConfig(temperature=0.5),
+    )
+
+
+def gpqa_record_to_sample(record: dict[str, Any]) -> Sample:
+    return Sample(
+        input=record["Question"],
+        choices=[
+            str(record["Réponse correcte"]),
+            str(record["Réponse incorrecte 1"]), 
+            str(record["Réponse incorrecte 2"]),
+            str(record["Réponse incorrecte 3"]),
+        ],
+        target="A",  # Correct answer is always first, shuffling handled by solver
     )
 
 
 @task
-def bac_fr():
-    """BAC-fr task - French Baccalauréat questions"""
-    
-    def create_samples():
-        dsdir = Path(os.getenv("DATASETS_DIRECTORY", "fr-gouv-coordination-ia"))
-        hf_dataset = load_dataset(str(dsdir / "bac-fr"), "default", split="train")
-        
-        samples = []
-        for item in hf_dataset:
-            prompt = "Répondre exactement à la question en suivant les instructions.\n\n"
-            if item.get('instruction'):
-                prompt += f"Instruction: {item['instruction']}\n\n"
-            prompt += f"Question: {item['enonce']}\n"
-            prompt += "Réponse: "
-            
-            if item.get("choix"):  # Multiple choice
-                choices = item["choix"] if isinstance(item["choix"], list) else [item["choix"]]
-                correct_idx = choices.index(item["choix correct"])
-                
-                sample = Sample(
-                    input=prompt,
-                    target=chr(65 + correct_idx),
-                    choices=choices
-                )
-            else:  # Open-ended
-                sample = Sample(
-                    input=prompt,
-                    target=item["reponse"]
-                )
-            
-            samples.append(sample)
-        
-        return Dataset(samples)
-    
+def bac_fr() -> Task:
+    """French Baccalauréat questions"""
     return Task(
-        dataset=create_samples(),
-        solver=generate(),
-        scorer=bac_prefix_suffix_match(),
-        config=GenerateConfig(max_tokens=2048)
+        dataset=hf_dataset(
+            path="fr-gouv-coordination-ia/bac-fr",
+            split="test",
+            sample_fields=bac_record_to_sample
+        ),
+        solver=[generate()],
+        scorer=math_prefix_suffix_match(),
+    )
+
+
+def bac_record_to_sample(record: dict[str, Any]) -> Sample:
+    return Sample(
+        input=record["question"],
+        target=str(record["answer"]),
     )
 
 
 @task
-def pr_fouras():
-    """Père Fouras riddles task"""
-    
-    def create_samples():
-        dsdir = Path(os.getenv("DATASETS_DIRECTORY", "fr-gouv-coordination-ia"))
-        hf_dataset = load_dataset(str(dsdir / "pr-fouras"), "default", split="train")
-        
-        samples = []
-        for item in hf_dataset:
-            prompt = "Trouver la réponse exacte à l'énigme. Vous pouvez proposer plusieurs réponses possibles. "
-            prompt += "Chaque réponse doit être séparée d'un caractère /.\n"
-            prompt += "Exemple:\nEnigme: Plus je travaille, plus je raccourcis. Qui suis-je ?\n"
-            prompt += "Réponses: Des ciseaux / Une paire de ciseaux / Une bougie / Une gomme / "
-            prompt += "Une personne agée / Un vieux / Un vêtement / Un sécateur / Un clou / Une pause.\n\n"
-            prompt += f"Enigme: {item['enigme']}\n"
-            prompt += "Réponses: "
-            
-            sample = Sample(
-                input=prompt,
-                target=item["reponse"]
-            )
-            samples.append(sample)
-        
-        return Dataset(samples)
-    
+def pr_fouras() -> Task:
+    """Père Fouras riddles"""
     return Task(
-        dataset=create_samples(),
-        solver=generate(),
-        scorer=pr_fouras_prefix_suffix_match(),
-        config=GenerateConfig(max_tokens=2048)
+        dataset=hf_dataset(
+            path="fr-gouv-coordination-ia/pr-fouras",
+            split="test", 
+            sample_fields=fouras_record_to_sample
+        ),
+        solver=[generate()],
+        scorer=multi_response_match(),
     )
 
 
-@task 
-def sornette():
-    """Sornette task - Text classification"""
-    
-    def create_samples():
-        dsdir = Path(os.getenv("DATASETS_DIRECTORY", "fr-gouv-coordination-ia"))
-        hf_dataset = load_dataset(str(dsdir / "sornette"), "default", split="train")
-        
-        samples = []
-        for item in hf_dataset:
-            choices = ['burlesque et fantaisiste', 'ludique et didactique', 'insidieux et mensonger', 'moral et accablant']
-            random.shuffle(choices)
-            correct_idx = choices.index(item["gold"])
-            
-            prompt = f"Texte: {item['text']}\n\n"
-            prompt += "Question: Le texte est-il:\n"
-            prompt += "\n".join([f"{chr(65+i)}. {choice}" for i, choice in enumerate(choices)])
-            prompt += "\nRéponse: "
-            
-            sample = Sample(
-                input=prompt,
-                target=chr(65 + correct_idx),
-                choices=choices
-            )
-            samples.append(sample)
-        
-        return Dataset(samples)
-    
-    return Task(
-        dataset=create_samples(),
-        solver=multiple_choice(),
-        scorer=accuracy(),
-        config=GenerateConfig(max_tokens=1)
+def fouras_record_to_sample(record: dict[str, Any]) -> Sample:
+    return Sample(
+        input=record["question"],
+        target=record["answer"],
     )
 
 
 @task
-def kangourou_to():
-    """Kangourou-to task - Mathematical reasoning"""
-    
-    def create_samples():
-        dsdir = Path(os.getenv("DATASETS_DIRECTORY", "fr-gouv-coordination-ia"))
-        hf_dataset = load_dataset(str(dsdir / "kangourou-to"), "default", split="train")
-        
-        samples = []
-        for item in hf_dataset:
-            choices = item["choices"].copy()
-            random.shuffle(choices)
-            correct_idx = choices.index(item["gold"])
-            
-            prompt = f"Question: {item['question']}\n\n"
-            prompt += "\n".join([f"{chr(65+i)}. {choice}" for i, choice in enumerate(choices)])
-            prompt += "\nRéponse: "
-            
-            sample = Sample(
-                input=prompt,
-                target=chr(65 + correct_idx),
-                choices=choices
-            )
-            samples.append(sample)
-        
-        return Dataset(samples)
-    
+def sornette() -> Task:
+    """Text classification task"""
     return Task(
-        dataset=create_samples(),
-        solver=multiple_choice(),
-        scorer=accuracy(),
-        config=GenerateConfig(max_tokens=1)
+        dataset=hf_dataset(
+            path="fr-gouv-coordination-ia/sornette",
+            split="test",
+            sample_fields=sornette_record_to_sample
+        ),
+        solver=[generate()],
+        scorer=french_exact_match(),
     )
 
 
-# Task registry
+def sornette_record_to_sample(record: dict[str, Any]) -> Sample:
+    return Sample(
+        input=record["text"],
+        target=str(record["label"]),
+    )
+
+
+@task
+def kangourou_to() -> Task:
+    """Mathematical reasoning task"""
+    return Task(
+        dataset=hf_dataset(
+            path="fr-gouv-coordination-ia/kangourou-to", 
+            split="test",
+            sample_fields=kangourou_record_to_sample
+        ),
+        solver=[generate()],
+        scorer=math_prefix_suffix_match(),
+    )
+
+
+def kangourou_record_to_sample(record: dict[str, Any]) -> Sample:
+    return Sample(
+        input=record["question"],
+        target=str(record["answer"]),
+    )
+
+
+# Task registry for backwards compatibility
 AVAILABLE_TASKS = {
     "ifeval-fr": ifeval_fr,
     "gpqa-fr": gpqa_fr, 

@@ -1,0 +1,109 @@
+name: Integration Tests
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'tasks/**'
+      - 'test_integration.py'
+      - 'run-inspect-ai.py'
+      - 'run-lighteval.py'
+      - '.github/workflows/test-integration.yml'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'tasks/**'
+      - 'test_integration.py'
+      - 'run-inspect-ai.py'
+      - 'run-lighteval.py'
+      - '.github/workflows/test-integration.yml'
+
+jobs:
+  test-frameworks:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ['3.12']
+        framework: ['lighteval', 'inspect_ai']
+        
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+    
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+        
+    - name: Cache pip packages
+      uses: actions/cache@v3
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ matrix.framework }}-${{ hashFiles('workers_image/requirements*.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-${{ matrix.framework }}-
+          ${{ runner.os }}-pip-
+    
+    - name: Install lighteval dependencies
+      if: matrix.framework == 'lighteval'
+      run: |
+        pip install --upgrade pip
+        pip install -r workers_image/requirements.txt
+        
+    - name: Install inspect_ai dependencies
+      if: matrix.framework == 'inspect_ai'
+      run: |
+        pip install --upgrade pip
+        pip install -r workers_image/requirements_inspect.txt
+        
+    - name: Install common dependencies
+      run: |
+        pip install datasets transformers torch
+        
+    - name: Run integration tests
+      env:
+        FRAMEWORK: ${{ matrix.framework }}
+      run: |
+        python test_integration.py
+        
+  validate-task-definitions:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.12'
+        
+    - name: Install inspect_ai for validation
+      run: |
+        pip install --upgrade pip
+        pip install -r workers_image/requirements_inspect.txt
+        
+    - name: Validate French task definitions
+      run: |
+        python -c "
+        import sys
+        sys.path.append('tasks')
+        
+        # Test that all tasks can be imported
+        from french_evals_inspect import (
+            ifeval_fr, gpqa_fr, bac_fr, pr_fouras, sornette, kangourou_to
+        )
+        
+        print('✓ All French inspect_ai tasks imported successfully')
+        
+        # Test task registry
+        from french_evals_inspect import AVAILABLE_TASKS
+        expected_tasks = {'ifeval-fr', 'gpqa-fr', 'bac-fr', 'pr-fouras', 'sornette', 'kangourou-to'}
+        actual_tasks = set(AVAILABLE_TASKS.keys())
+        
+        if expected_tasks != actual_tasks:
+            print(f'✗ Task registry mismatch. Expected: {expected_tasks}, Got: {actual_tasks}')
+            sys.exit(1)
+        
+        print('✓ Task registry validated successfully')
+        "
