@@ -1,7 +1,18 @@
 #!/bin/bash
 module load apptainer
 
-apptainer exec --no-mount home,cwd --bind ${HOME}/.hf_token --env ADD=$1 --nv ~/llm_benchmark_fr.sif bash -c '
+# Determine which container to use based on FRAMEWORK environment variable
+FRAMEWORK=${FRAMEWORK:-lighteval}
+
+if [ "$FRAMEWORK" = "inspect_ai" ]; then
+    CONTAINER_NAME="llm_benchmark_fr_inspect.sif"
+    echo "Using inspect_ai container: $CONTAINER_NAME"
+else
+    CONTAINER_NAME="llm_benchmark_fr.sif" 
+    echo "Using lighteval container: $CONTAINER_NAME"
+fi
+
+apptainer exec --no-mount home,cwd --bind ${HOME}/.hf_token --env ADD=$1 --nv ~/$CONTAINER_NAME bash -c '
 
 export HF_HOME=/tmp/${USER}-runtime-dir/cache
 mkdir -p ${HF_HOME}

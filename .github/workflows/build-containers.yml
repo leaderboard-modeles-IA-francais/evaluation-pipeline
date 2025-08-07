@@ -1,0 +1,108 @@
+name: Build Singularity Containers
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'workers_image/**'
+      - 'tasks/**'
+      - '.github/workflows/build-containers.yml'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'workers_image/**'
+      - 'tasks/**'
+      - '.github/workflows/build-containers.yml'
+
+jobs:
+  build-lighteval-container:
+    runs-on: ubuntu-latest
+    if: contains(github.event.head_commit.modified, 'workers_image/requirements.txt') || contains(github.event.head_commit.modified, 'workers_image/Singularityfile') || contains(github.event.head_commit.added, 'workers_image/') || github.event_name == 'pull_request'
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+    
+    - name: Setup Singularity
+      uses: eWaterCycle/setup-singularity@v7
+      with:
+        singularity-version: 3.8.3
+    
+    - name: Build lighteval container
+      run: |
+        cd workers_image
+        sudo singularity build llm_benchmark_fr.sif Singularityfile
+        
+    - name: Upload lighteval container artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: lighteval-container
+        path: workers_image/llm_benchmark_fr.sif
+        retention-days: 30
+
+  build-inspect-ai-container:
+    runs-on: ubuntu-latest
+    if: contains(github.event.head_commit.modified, 'workers_image/requirements_inspect.txt') || contains(github.event.head_commit.modified, 'workers_image/Singularityfile_inspect') || contains(github.event.head_commit.added, 'workers_image/') || github.event_name == 'pull_request'
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+    
+    - name: Setup Singularity
+      uses: eWaterCycle/setup-singularity@v7
+      with:
+        singularity-version: 3.8.3
+    
+    - name: Build inspect_ai container
+      run: |
+        cd workers_image
+        sudo singularity build llm_benchmark_fr_inspect.sif Singularityfile_inspect
+        
+    - name: Upload inspect_ai container artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: inspect-ai-container
+        path: workers_image/llm_benchmark_fr_inspect.sif
+        retention-days: 30
+
+  test-containers:
+    runs-on: ubuntu-latest
+    needs: [build-lighteval-container, build-inspect-ai-container]
+    if: always() && (needs.build-lighteval-container.result == 'success' || needs.build-inspect-ai-container.result == 'success')
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      
+    - name: Setup Singularity
+      uses: eWaterCycle/setup-singularity@v7
+      with:
+        singularity-version: 3.8.3
+    
+    - name: Download lighteval container
+      if: needs.build-lighteval-container.result == 'success'
+      uses: actions/download-artifact@v4
+      with:
+        name: lighteval-container
+        path: workers_image/
+        
+    - name: Download inspect_ai container  
+      if: needs.build-inspect-ai-container.result == 'success'
+      uses: actions/download-artifact@v4
+      with:
+        name: inspect-ai-container
+        path: workers_image/
+        
+    - name: Test lighteval container
+      if: needs.build-lighteval-container.result == 'success'
+      run: |
+        cd workers_image
+        singularity exec llm_benchmark_fr.sif python --version
+        singularity exec llm_benchmark_fr.sif python -c "import lighteval; print('lighteval version:', lighteval.__version__ if hasattr(lighteval, '__version__') else 'unknown')"
+        
+    - name: Test inspect_ai container
+      if: needs.build-inspect-ai-container.result == 'success'
+      run: |
+        cd workers_image  
+        singularity exec llm_benchmark_fr_inspect.sif python --version
+        singularity exec llm_benchmark_fr_inspect.sif python -c "import inspect_ai; print('inspect_ai version:', inspect_ai.__version__ if hasattr(inspect_ai, '__version__') else 'unknown')"

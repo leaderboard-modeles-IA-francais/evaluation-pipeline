@@ -44,7 +44,16 @@ pip list
 #NGPUSPERNODES=$(nvidia-smi --query-gpu=name --format=csv,noheader | wc -l)
 #NGPUS=$(($NGPUSPERNODES*($NNODES+1)))
 
-python3 run-lighteval.py
+# Check if framework parameter is set, default to lighteval
+FRAMEWORK=${FRAMEWORK:-lighteval}
+
+if [ "$FRAMEWORK" = "inspect_ai" ]; then
+    echo "Using inspect_ai framework"
+    python3 run-inspect-ai.py
+else
+    echo "Using lighteval framework"  
+    python3 run-lighteval.py
+fi
 if [ -d "$OUTPUT_DIR/results" ]; then
   mv $OUTPUT_DIR/results $RESULT_DIR
 

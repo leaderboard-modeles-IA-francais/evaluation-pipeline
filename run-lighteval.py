@@ -36,6 +36,7 @@ def main():
         'tasks': 'community|bac-fr|0|0,community|ifeval-fr|0|0,community|pr-fouras|0|0,community|gpqa-fr|0|0',
         'max_model_length': None,
         'use_chat_template': True,
+        'framework': 'lighteval'  # Added framework parameter for consistency
     }
 
     task.connect(parameters)
